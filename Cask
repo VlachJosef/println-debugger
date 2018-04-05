@@ -1,7 +1,7 @@
 ;;-*- Mode: Emacs-Lisp -*-
 ;;; Cask --- project definition
 
-;; Copyright (C) 2017 Vlach Josef
+;; Copyright (C) 2018 Vlach Josef
 
 ;; Author: Josef Vlach <Vlach.Josef@gmail.com>
 

@@ -14,11 +14,12 @@
 (require 's)
 (require 'imenu)
 (require 'subr-x)
-(require 'ensime)
 
 (defvar println-scala "println(\"%s: \" + (%s))")
 (defvar println-emacs-lisp "(message \"%s: %%s\" %s)")
 (defvar println-javascript "console.log('%s', %s);")
+(defvar println-haskell "putTextLn $ \"%s \" <> show %s")
+(defvar println-gdscript "print(\"%s \", str(%s))")
 
 (defun print-ln-print (prompt)
   (let ((num (prefix-numeric-value arg))
@@ -27,7 +28,7 @@
       (when (equal num 1)
         (unless on-empty-line
           (beginning-of-line)
-          (ensime-company-complete-or-indent)
+          (indent-according-to-mode)
           (kill-line)))
 
       (when (and (> num 1) (not on-empty-line))
@@ -39,7 +40,7 @@
         (let* ((index (- num number 1))
                (latest-kill (current-kill index t))
                (latest-kill-unquoted (s-replace "\"" " " latest-kill)))
-          (ensime-company-complete-or-indent)
+          (indent-according-to-mode)
           (insert (format prompt latest-kill-unquoted latest-kill))
           (move-end-of-line nil)
           (unless (equal index 0)
@@ -50,7 +51,9 @@
   (pcase major-mode
     (`emacs-lisp-mode (print-ln-print println-emacs-lisp))
     (`js-mode (print-ln-print println-javascript))
-    (`scala-mode (print-ln-print println-scala))))
+    (`scala-mode (print-ln-print println-scala))
+    (`haskell-mode (print-ln-print println-haskell))
+    (`gdscript-mode (print-ln-print println-gdscript))))
 
 (provide 'println-debugger)
 ;;; println-debugger.el ends here

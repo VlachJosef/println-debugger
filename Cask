@@ -32,7 +32,6 @@
 (package-file "println-debugger.el")
 
 (depends-on "s")
-(depends-on "ensime")
 
 (development
  (depends-on "ert-runner")

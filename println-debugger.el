@@ -23,7 +23,42 @@
 
 ;;(current-kill 3)
 
-(defvar lorem-scala "")
+(defvar lorem-scala "package uk.gov.hmrc.gform.eval
+
+import cats.Monoid
+import cats.syntax.eq._
+import uk.gov.hmrc.gform.sharedmodel.formtemplate.{ FormComponentId, FormCtx, Sum }
+
+case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
+  // uk
+  // gov
+  // hmrc
+  // gform
+  // sharedmodel
+  // formtemplate
+  // \"A\"
+  def keys: Set[Sum] = lookup.keySet
+
+  def ++(sumInfo: SumInfo): SumInfo = {
+    SumInfo(lookup ++ sumInfo.lookup)
+  }
+
+  def sums: Set[Sum] = lookup.keys.toSet
+
+  def dependees(formComponentId: FormComponentId): Option[Set[FormComponentId]] = {
+
+    val res: Set[FormComponentId] = lookup.toList
+      .collect {
+        case (Sum(FormCtx(fcId)), dependeesFcId) if (fcId.baseComponentId === formComponentId.baseComponentId) =>
+          dependeesFcId
+      }
+      .toSet
+      .flatten
+
+    if (res.isEmpty) None else Some(res)
+  }
+}
+")
 
 ;;((read-char-choice "HI:" '(?a ?b ?c)))
 
@@ -36,6 +71,11 @@
      :background "DarkSlateBlue"))
   "Face for print-ln generated lines."
   :group 'print-ln-faces)
+
+(defvar println-basic-renderer (make-hash-table))
+(defvar println-aligned-renderer (make-hash-table))
+(defvar println-single-line-renderer (make-hash-table))
+(defvar println-identifier-founder (make-hash-table))
 
 (defvar println-counter 0)
 
@@ -283,16 +323,28 @@
     ""))
 
 (defun println-to-string (item identifier)
-  (concat "println(\"" (println-identifier identifier) (println-safe-string item) ": \" + " item ")"))
+  (when-let ((basic-renderer (gethash major-mode println-basic-renderer)))
+    (funcall basic-renderer item identifier)))
 
-(defun println-to-string-longest (item longest identifier)
-  (concat "println(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\" + " item ")"))
+(defun println-to-string-aligned (item longest identifier)
+  (when-let ((aligned-renderer (gethash major-mode println-aligned-renderer)))
+    (funcall aligned-renderer item longest identifier)))
 
-(defun println-to-single-line-string (item)
+(defun println-scala-to-single-line-string (item)
   (concat "\", " (println-safe-string item) ": \" + " item))
 
+(defun println-emacs-lisp-to-single-line-string (item)
+  (concat (format ", %s:" item) " %s"))
+
+(defun println-set-major-mode-rules (buffer-type &rest rules)
+  (if-let* ((binding (assoc buffer-type gdscript-debug--buffer-rules)))
+      (setcdr binding rules)
+    (push (cons buffer-type rules)
+	  gdscript-debug--buffer-rules)))
+
 (defun println-render-single-line (items identifier)
-  (concat "println(\"" (println-identifier identifier) (s-chop-prefix "\", " (mapconcat #'println-to-single-line-string items " + ")) ")"))
+  (when-let ((single-line-renderer (gethash major-mode println-single-line-renderer)))
+    (funcall single-line-renderer items identifier)))
 
 (defun println-multiline-p (data)
   (print-ln-flags->multiline (print-ln-data->flags data)))
@@ -311,16 +363,20 @@
         (if (println-align-p data)
             (let ((longest (seq-max (seq-map (lambda (it) (string-width (or it ""))) items))))
               (mapconcat (lambda (item)
-                           (println-to-string-longest item longest identifier)) items (concat "\n" indentation)))
+                           (println-to-string-aligned item longest identifier)) items (concat "\n" indentation)))
           (mapconcat (lambda (item)
                        (println-to-string item identifier)) items (concat "\n" indentation)))
       (println-render-single-line items identifier))))
 
-(let ((buffer (generate-new-buffer "limbo")))
-  (with-current-buffer buffer
-    (scala-mode)
-    (insert lorem-scala)
-    (display-buffer (current-buffer))))
+;; (let ((buffer (generate-new-buffer "limbo")))
+;;   (with-current-buffer buffer
+;;     (scala-mode)
+;;     (insert lorem-scala)
+;;     (display-buffer (current-buffer))))
+
+(defun println-search-identifier ()
+  (when-let ((identifier-founder (gethash major-mode println-identifier-founder)))
+    (funcall identifier-founder)))
 
 (defun println (prefix)
   (interactive "p")
@@ -328,7 +384,7 @@
     (print-ln-delete-current))
 
   (let* ((kill-ring (println-preprocess-kill-ring))
-         (identifier (format "%s.%s"(println-search-class) (println-search-def)))
+         (identifier (println-search-identifier))
          (flags (print-ln-flags-create :multiline t :align t :show-identifier t))
          (data (print-ln-data-create :items nil :identifier identifier :flags flags)))
     (dotimes (i (min prefix (length kill-ring)))
@@ -368,6 +424,57 @@
 
       (backward-char))))
 
+;; Scala support
+(defun println-scala-to-string (item identifier)
+  (concat "println(\"" (println-identifier identifier) (println-safe-string item) ": \" + " item ")"))
+
+(defun println-scala-to-string-aligned (item longest identifier)
+  (concat "println(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\" + " item ")"))
+
+(defun println-scala-render-single-line (items identifier)
+  (concat "println(\"" (println-identifier identifier) (s-chop-prefix "\", " (mapconcat #'println-scala-to-single-line-string items " + ")) ")"))
+
+(defun println-scala-identifier ()
+  (format "%s.%s" (println-search-class) (println-search-def)))
+
+;; Emacs Lisp support
+(defun println-emacs-lisp-to-string (item identifier)
+  (format "(message \"%s%s: %%s\" %s)" (println-identifier identifier) item item))
+
+(defun println-emacs-lisp-to-string-aligned (item longest identifier)
+  (format "(message \"%s%s: %%s\" %s)" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s") (println-safe-string item)) item))
+
+(defun println-emacs-lisp-render-single-line (items identifier)
+  (concat "(message \""
+          (println-identifier identifier)
+          (s-chop-prefix ", " (mapconcat #'println-emacs-lisp-to-single-line-string items ""))
+          "\" "
+          (mapconcat #'identity items " ")
+          ")"))
+
+(defun println-emacs-lisp-search-defun ()
+  (save-excursion
+    (re-search-backward "^(defun \\([^( ]*\\)")
+    (match-string 1)))
+
+(defun println-register-major-mode (major-mode basic aligned single identifier)
+  (puthash major-mode basic println-basic-renderer)
+  (puthash major-mode aligned println-aligned-renderer)
+  (puthash major-mode single println-single-line-renderer)
+  (puthash major-mode identifier println-identifier-founder))
+
+(println-register-major-mode 'scala-mode
+                             #'println-scala-to-string
+                             #'println-scala-to-string-aligned
+                             #'println-scala-render-single-line
+                             #'println-scala-identifier)
+
+(println-register-major-mode 'emacs-lisp-mode
+                             #'println-emacs-lisp-to-string
+                             #'println-emacs-lisp-to-string-aligned
+                             #'println-emacs-lisp-render-single-line
+                             #'println-emacs-lisp-search-defun)
+
 (defun print-ln-print (num prompt)
   (let ((on-empty-line (string-blank-p (thing-at-point 'line t))))
     (when (> num 0)
@@ -395,7 +502,7 @@
 (defun print-ln (arg)
   (interactive "p")
   (pcase major-mode
-    (`emacs-lisp-mode (print-ln-print arg println-emacs-lisp))
+    (`emacs-lisp-mode (println arg))
     (`js-mode (print-ln-print arg println-javascript))
     (`scala-mode (println arg))
     (`haskell-mode (print-ln-print arg println-haskell))

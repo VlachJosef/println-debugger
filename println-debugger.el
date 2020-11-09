@@ -115,14 +115,23 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
                                    (identifier "Demo.init")
                                    (flags (print-ln-flags-create :multiline t :align t :show-identifier t))
                                    (data (print-ln-data-create :items nil :identifier identifier :flags flags)))
-                              (dotimes (i (length kill-ring))
-                                (let ((current (nth i kill-ring)))
+                              (dotimes (item (length kill-ring))
+                                (let ((current (nth item kill-ring)))
                                   (println-data-add-item data current)))
                               data))
 
 (defun println-demo ()
   (forward-line)
   (print-ln-render (println-demo-data)))
+
+;; (defun println-current-overlay (pos)
+;;   (setq current-overlay nil)
+;;   (let ((overlays (overlays-in pos pos)))
+;;     (dolist (overlay overlays)
+;;       (when (overlay-get overlay 'print-ln-p)
+;;         (let ((data (overlay-get overlay 'print-ln)))
+;;           (push (println-revert-info-create :data data) println-revert-data))))
+;;     (remove-overlays (point-min) (point-max) 'print-ln-p t)))
 
 (defun println-save-print-data ()
   (setq println-revert-data nil)
@@ -168,6 +177,11 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
   (setf (print-ln-data->items data)
         (append (print-ln-data->items data) (list item))))
 
+(defun println-data-update-item (overlay current modified)
+  (let ((data (overlay-get overlay 'print-ln)))
+    (setf (print-ln-data->items data)
+        (seq-map (lambda (item) (if (eq item current) modified item)) (print-ln-data->items data)))))
+
 (defun println-table-remove-row (data)
   (let* ((items (print-ln-data->items data)))
     (if (equal 1 (length items))
@@ -179,6 +193,7 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 
 (defun print-ln-foreach()
   (interactive)
+
   (message "HELLO FROM print-ln-foreach"))
 
 (defun println-search-regex (regex num)
@@ -215,28 +230,32 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 
 (defun print-ln-align()
   (interactive)
-  (let ((data (println-get-data)))
+  (let ((println-inhibit-modification-hooks t)
+        (data (println-get-data)))
     (print-ln-toggle-align data)
     (print-ln-delete-current)
     (print-ln-render data)))
 
 (defun print-ln-multiline()
   (interactive)
-  (let ((data (println-get-data)))
+  (let ((println-inhibit-modification-hooks t)
+        (data (println-get-data)))
     (print-ln-toggle-multiline data)
     (print-ln-delete-current)
     (print-ln-render data)))
 
 (defun print-ln-identifier()
   (interactive)
-  (let ((data (println-get-data)))
+  (let ((println-inhibit-modification-hooks t)
+        (data (println-get-data)))
     (print-ln-toggle-identifier data)
     (print-ln-delete-current)
     (print-ln-render data)))
 
 (defun print-ln-increase()
   (interactive)
-  (let* ((data (println-get-data))
+  (let* ((println-inhibit-modification-hooks t)
+         (data (println-get-data))
          (items (print-ln-data->items data))
          (kill-items (println-preprocess-kill-ring))
          (next-kill (seq-find (lambda (kill-item)
@@ -264,7 +283,8 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 
 (defun print-ln-decrease ()
   (interactive)
-  (let ((data (println-get-data)))
+  (let ((println-inhibit-modification-hooks t)
+        (data (println-get-data)))
     (println-table-remove-row data)))
 
 (defun print-ln-stamp()
@@ -385,10 +405,10 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 
   (let* ((kill-ring (println-preprocess-kill-ring))
          (identifier (println-search-identifier))
-         (flags (print-ln-flags-create :multiline t :align t :show-identifier t))
+         (flags (print-ln-flags-create :multiline t :align nil :show-identifier t))
          (data (print-ln-data-create :items nil :identifier identifier :flags flags)))
-    (dotimes (i (min prefix (length kill-ring)))
-      (let ((current (nth i kill-ring)))
+    (dotimes (item (min prefix (length kill-ring)))
+      (let ((current (nth item kill-ring)))
         (println-data-add-item data current)))
 
     (forward-line)
@@ -424,9 +444,75 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 
       (backward-char))))
 
+(defun println-insert-in-front (start end)
+
+  (message "[println-insert-in-front] %s %s" start end))
+
+(defvar println-inhibit-modification-hooks nil)
+
+(defun println-modify (start end)
+  (message "[MODIFY] star t %s end %s undo-in-progress %s" start end undo-in-progress)
+  (when (and
+         (not undo-in-progress)
+         (not println-inhibit-modification-hooks)
+         (print-ln-find-overlay-specifying 'print-ln-p))
+    (let* ((inhibit-modification-hooks t)
+           (inserted (buffer-substring-no-properties start end))
+           (overlay (print-ln-find-overlay-specifying 'print-ln))
+           (point (point))
+           (current-item (get-text-property (1- point) :print-ln-current))
+           ;;(data (overlay-get overlay 'print-ln))
+           (start2 (previous-single-property-change start :print-ln-current nil (line-beginning-position)))
+           (end2 (next-single-property-change end :print-ln-current nil (line-end-position)))
+           (left (buffer-substring-no-properties start2 start))
+           (right (buffer-substring-no-properties end (if (eq end2 (line-end-position)) (1- end2) end2)))
+           (modified-item (concat left right))
+           (search-for (concat current-item "[[:space:]]*:")))
+
+      (put-text-property start2 end2 :print-ln-current modified-item)
+      (message "[MODIFY] star t %s end  %s :%s:  mi: %s search-for %s" start end inserted modified-item search-for)
+
+      (when (re-search-backward search-for (line-beginning-position) t)
+        (replace-match (concat modified-item ":"))
+        (println-data-update-item overlay current-item modified-item)
+        (goto-char  (1- point)))
+
+      (message "[MODIFY] start2 %s end2 %s eol %s current %s" start2 end2 (line-end-position) current-item))))
+
+(defun println-insert-behind (start end)
+  (message "[BEHIND] star t %s end %s undo-in-progress %s" start end undo-in-progress)
+  (when (not undo-in-progress)
+    (let* ((inhibit-modification-hooks t)
+           (inserted (buffer-substring-no-properties start end))
+           (overlay (print-ln-find-overlay-specifying 'print-ln))
+           (point (point))
+           (current-item (get-text-property (1- point) :print-ln-current))
+           (data (overlay-get overlay 'print-ln))
+           (start2 (previous-single-property-change point :print-ln-current nil (line-beginning-position)))
+           (end2 (next-single-property-change point :print-ln-current nil (line-end-position)))
+           (modified-item (buffer-substring-no-properties start2 (if (eq end2 (line-end-position)) (1- end2) end2)))
+           (search-for (concat current-item "[[:space:]]*:")))
+
+      ;; (concat (car (print-ln-data->items data)) inserted)
+      (println-data-update-item overlay current-item modified-item)
+      ;; (print-ln-delete-current)
+      ;; (print-ln-render data)
+      ;; (goto-char (1+ point))
+      (when (re-search-backward search-for (line-beginning-position) t)
+        (replace-match (concat modified-item ":"))
+        (put-text-property (1+ start2) (1+ end2) :print-ln-current modified-item)
+        (goto-char  (1+ point)))
+
+      (message "[BEHIND] star t %s end  %s :%s:" start end inserted)
+      (message "[BEHIND] start2 %s end2 %s eol %s current '%s' modified-item '%s'" start2 end2 (line-end-position) current-item modified-item))))
+
 ;; Scala support
 (defun println-scala-to-string (item identifier)
-  (concat "println(\"" (println-identifier identifier) (println-safe-string item) ": \" + " item ")"))
+  (message "[println-scala-to-string] identifier: %s" identifier)
+  (message "[println-scala-to-string] itAem     : %s" itAem)
+
+  (concat "println(\"" (println-identifier identifier) (println-safe-string item) ": \" + "
+          (propertize item 'modification-hooks '(println-modify)) ")"))
 
 (defun println-scala-to-string-aligned (item longest identifier)
   (concat "println(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\" + " item ")"))
@@ -437,12 +523,19 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 (defun println-scala-identifier ()
   (format "%s.%s" (println-search-class) (println-search-def)))
 
+(defun println-editable (item)
+  (propertize item
+              :print-ln-current item
+              'modification-hooks '(println-modify)
+              'insert-in-front-hooks '(println-insert-in-front)
+              'insert-behind-hooks '(println-insert-behind)))
+
 ;; Emacs Lisp support
 (defun println-emacs-lisp-to-string (item identifier)
-  (format "(message \"%s%s: %%s\" %s)" (println-identifier identifier) item item))
+  (format "(message \"%s%s: %%s\" %s)" (println-identifier identifier) item (println-editable item)))
 
 (defun println-emacs-lisp-to-string-aligned (item longest identifier)
-  (format "(message \"%s%s: %%s\" %s)" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s") (println-safe-string item)) item))
+  (format "(message \"%s%s: %%s\" %s)" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s") (println-safe-string item)) (println-editable item)))
 
 (defun println-emacs-lisp-render-single-line (items identifier)
   (concat "(message \""

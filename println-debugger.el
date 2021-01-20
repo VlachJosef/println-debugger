@@ -72,10 +72,18 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
   "Face for print-ln generated lines."
   :group 'print-ln-faces)
 
+(defface print-ln-diff-hunk-heading-2
+  '((((class color) (background dark))
+     :extend t
+     :background "black"))
+  "Face for print-ln generated lines."
+  :group 'print-ln-faces)
+
 (defvar println-basic-renderer (make-hash-table))
 (defvar println-aligned-renderer (make-hash-table))
 (defvar println-single-line-renderer (make-hash-table))
 (defvar println-identifier-founder (make-hash-table))
+(defvar println-stamp-renderer (make-hash-table))
 
 (defvar println-counter 0)
 
@@ -114,7 +122,7 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 (defun println-demo-data () (let* ((kill-ring '("hi" "there"))
                                    (identifier "Demo.init")
                                    (flags (print-ln-flags-create :multiline t :align t :show-identifier t))
-                                   (data (print-ln-data-create :items nil :identifier identifier :flags flags)))
+                                   (data (println-cluster-data-create :items nil :identifier identifier :flags flags :indentation nil)))
                               (dotimes (item (length kill-ring))
                                 (let ((current (nth item kill-ring)))
                                   (println-data-add-item data current)))
@@ -159,40 +167,76 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
             (overlay-put overlay 'print-ln data)
             (overlay-put overlay 'keymap print-ln-keymap)))))))
 
-(cl-defstruct (print-ln-data (:constructor print-ln-data-create)
-                             (:copier nil)
-                             (:conc-name print-ln-data->))
-  items identifier flags)
+
+
+(cl-defstruct (println-preferences (:constructor println-preferences-create)
+                                   (:copier nil)
+                                   (:conc-name println-preferences->))
+  mode ;; can be either :item or :stamp
+  flags)
+
+(cl-defstruct (println-stamp-data (:constructor println-stamp-data-create)
+                                  (:copier nil)
+                                  (:conc-name println-stamp-data->))
+  order)
+
+(cl-defstruct (println-item-data (:constructor println-item-data-create)
+                                 (:copier nil)
+                                 (:conc-name println-item-data->))
+  item)
+
+(let ((stamp (println-stamp-data-create :order 1))
+      (item (println-item-data-create :item "POKLOP")))
+  (cond ((println-item-data-p item)
+         (message "HERE"))
+        (t (message "NOPE %s" item)))
+ )
+
+(cl-defstruct (println-cluster-data (:constructor println-cluster-data-create)
+                                    (:copier nil)
+                                    (:conc-name println-cluster-data->))
+  items identifier flags indentation)
 
 (cl-defstruct (print-ln-flags (:constructor print-ln-flags-create)
                               (:copier nil)
                               (:conc-name print-ln-flags->))
   multiline align show-identifier)
 
+(defconst println-default-flags
+  (print-ln-flags-create :multiline t :align nil :show-identifier nil))
+
+(defvar println-global-preferences
+  (println-preferences-create
+   :mode :item
+   :flags println-default-flags))
+
+
 (defun println-table-update-identifier (data identifier)
-  (setf (print-ln-data->identifier data)
+  (setf (println-cluster-data->identifier data)
         identifier))
 
 (defun println-data-add-item (data item)
-  (setf (print-ln-data->items data)
-        (append (print-ln-data->items data) (list item))))
+  (setf (println-cluster-data->items data)
+        (append (println-cluster-data->items data) (list (println-item-data-create :item item)))))
 
 (defun println-data-update-item (overlay current modified)
   (let ((data (overlay-get overlay 'print-ln)))
-    (setf (print-ln-data->items data)
-        (seq-map (lambda (item) (if (eq item current) modified item)) (print-ln-data->items data)))))
+    (setf (println-cluster-data->items data)
+        (seq-map (lambda (item) (if (eq item current) modified item)) (println-cluster-data->items data)))))
 
 (defun println-table-remove-row (data)
-  (let* ((items (print-ln-data->items data)))
+  (let* ((items (println-cluster-data->items data)))
     (if (equal 1 (length items))
         (print-ln-delete-current)
-      (setf (print-ln-data->items data)
+      (setf (println-cluster-data->items data)
             (reverse (cdr (reverse items))))
       (print-ln-delete-current)
       (print-ln-render data))))
 
 (defun print-ln-foreach()
   (interactive)
+
+
 
   (message "HELLO FROM print-ln-foreach"))
 
@@ -201,34 +245,43 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
     (let* ((scala-syntax:definition-words-re regex)
            (scala-syntax:all-definition-re (scala-syntax:build-definition-re (concat "\\(?1:" scala-syntax:definition-words-re "\\)\\b"))))
       (scala-syntax:beginning-of-definition)
-      (re-search-forward (concat regex " " scala-syntax:plainid-re))
+      (re-search-forward (concat regex " " scala-syntax:plainid-re) nil t)
       (match-string num))))
 
 (defun println-search-def ()
   (println-search-regex "def" 1))
 
 (defun println-search-class ()
-  (println-search-regex "\\(class\\|object\\)" 2))
+  (println-search-regex "\\(class\\|object\\|trait\\)" 2))
+
+(defun println-search-gdscript-func ()
+  (println-search-regex "func" 1))
 
 (defun print-ln-toggle-identifier (data)
-  (let ((flags (print-ln-data->flags data)))
-    (setf (print-ln-flags->show-identifier flags)
-          (not (print-ln-flags->show-identifier flags)))))
+  (let* ((flags (println-cluster-data->flags data))
+         (global (println-preferences->flags println-global-preferences))
+         (show-identifier (not (print-ln-flags->show-identifier flags))))
+    (setf (print-ln-flags->show-identifier flags) show-identifier
+          (print-ln-flags->show-identifier global) show-identifier)))
 
 (defun print-ln-toggle-multiline (data)
-  (let ((flags (print-ln-data->flags data)))
-    (setf (print-ln-flags->multiline flags)
-          (not (print-ln-flags->multiline flags)))))
+  (let* ((flags (println-cluster-data->flags data))
+         (global (println-preferences->flags println-global-preferences))
+         (multiline (not (print-ln-flags->multiline flags))))
+    (setf (print-ln-flags->multiline flags) multiline
+          (print-ln-flags->multiline global) multiline)))
 
 (defun print-ln-toggle-align (data)
-  (let ((flags (print-ln-data->flags data)))
-    (setf (print-ln-flags->align flags)
-          (not (print-ln-flags->align flags)))))
+  (let* ((flags (println-cluster-data->flags data))
+         (global (println-preferences->flags println-global-preferences))
+         (align (not (print-ln-flags->align flags))))
+    (setf (print-ln-flags->align flags) align
+          (print-ln-flags->align global) align)))
 
 (defun println-get-data ()
   (get-char-property (point) 'print-ln))
 
-(defun print-ln-align()
+(defun print-ln-align ()
   (interactive)
   (let ((println-inhibit-modification-hooks t)
         (data (println-get-data)))
@@ -236,7 +289,7 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
     (print-ln-delete-current)
     (print-ln-render data)))
 
-(defun print-ln-multiline()
+(defun print-ln-multiline ()
   (interactive)
   (let ((println-inhibit-modification-hooks t)
         (data (println-get-data)))
@@ -244,7 +297,7 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
     (print-ln-delete-current)
     (print-ln-render data)))
 
-(defun print-ln-identifier()
+(defun print-ln-identifier ()
   (interactive)
   (let ((println-inhibit-modification-hooks t)
         (data (println-get-data)))
@@ -252,15 +305,20 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
     (print-ln-delete-current)
     (print-ln-render data)))
 
-(defun print-ln-increase()
+(defun println-next-kill (data)
+  (let ((items (seq-map #'println-item-data->item
+                        (seq-filter #'println-item-data-p
+                                    (println-cluster-data->items data))))
+        (kill-items (println-preprocess-kill-ring)))
+    (seq-find (lambda (kill-item)
+                (not (member kill-item items)))
+              kill-items)))
+
+(defun print-ln-increase ()
   (interactive)
   (let* ((println-inhibit-modification-hooks t)
          (data (println-get-data))
-         (items (print-ln-data->items data))
-         (kill-items (println-preprocess-kill-ring))
-         (next-kill (seq-find (lambda (kill-item)
-                                (not (member kill-item items)))
-                              kill-items)))
+         (next-kill (println-next-kill data)))
     (if (not next-kill)
         (message "No more elements in kill-ring.")
       (println-data-add-item data next-kill)
@@ -287,31 +345,62 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
         (data (println-get-data)))
     (println-table-remove-row data)))
 
-(defun print-ln-stamp()
-  (interactive)
-  (let ((data (println-get-data)))
-    (print-ln-delete-current)
-    (setq println-counter (1+ println-counter))
-    (print-ln-render-2 data println-counter)))
+
+(defun print-ln-stamp (prefix)
+  (interactive "p")
+
+  (let* ((data (println-get-data))
+         (line (thing-at-point 'line))
+         (item-old (get-text-property (next-single-property-change 0 'item-data line) 'item-data line))
+         (items (println-cluster-data->items data))
+         (index (seq-position items item-old))
+         (item-new (cond ((println-item-data-p item-old)
+                          (setf (println-preferences->mode println-global-preferences) :stamp)
+                          (println-stamp-data-create :order (setq println-counter (1+ println-counter))))
+                         ((println-stamp-data-p item-old)
+                          (setf (println-preferences->mode println-global-preferences) :item)
+                          (println-item-data-create :item (println-next-kill data))))))
+    (if (numberp index)
+        (setf (nth index items) item-new)
+      (error "Index of element '%s' not found" item-old))
+
+    (let ((point (line-beginning-position))
+          (println-inhibit-modification-hooks t))
+      (print-ln-delete-current)
+      (print-ln-render data)
+      (goto-char point)
+      (goto-char (line-end-position)))))
 
 (defun print-ln-reset ()
   (interactive)
   (setq println-counter 0)
   (message "Println counter reset."))
 
-(defun print-ln-reverse()
+(defun print-ln-reverse ()
   (interactive)
   (let* ((data (println-get-data))
-         (items (print-ln-data->items data)))
-    (setf (print-ln-data->items data)
+         (items (println-cluster-data->items data)))
+    (setf (println-cluster-data->items data)
           (reverse items))
     (print-ln-delete-current)
     (print-ln-render data)))
 
+
+(defun println-exclude-current ()
+  (interactive)
+  (let* ((data (println-get-data))
+         (items (println-cluster-data->items data)))
+    (message "[println-exclude-current] items: %s" items)
+    ))
+
 (defvar print-ln-keymap
   (let ((map (make-sparse-keymap)))
     ;;(define-key map (kbd "C-i") 'print-ln-foreach)
+    (define-key map (kbd "C-c C-c") 'print-ln-commit)
+    (define-key map (kbd "RET") 'print-ln-newline)
+    (define-key map (kbd "C-c _") 'print-ln-scala-for-comprehension)
     (define-key map (kbd "C-M-r") 'print-ln-reverse)
+    ;;(define-key map (kbd "C-M-k") 'println-exclude-current)
     (define-key map (kbd "C-M-i") 'print-ln-reset)
     (define-key map (kbd "C-M-o") 'print-ln-stamp)
     (define-key map (kbd "C-M-s") 'print-ln-identifier)
@@ -323,9 +412,38 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
     map)
   "Keymap for print-ln managed region.")
 
+(defun print-ln-newline ()
+  (interactive)
+  (when-let ((overlay (print-ln-find-overlay-specifying 'print-ln)))
+    (if (not (= 1 (- (overlay-end overlay) (point))))
+        (let ((original-binding (key-binding (kbd "RET") nil nil (point-min))))
+          ;; Call whatever was originally bind by "RET" key.
+          (unless (eq original-binding 'print-ln-newline)
+            (funcall original-binding)))
+      (goto-char (overlay-end overlay))
+      (insert "\n")
+      (forward-line -1)
+      (indent-according-to-mode))))
+
+(defun print-ln-scala-for-comprehension ()
+  (interactive)
+  (message "[print-ln-scala-for-comprehension] TODO"))
+
+(defun print-ln-commit ()
+  (interactive)
+  (let* ((data (println-get-data))
+         (str (println-render data))
+         (indentation (println-cluster-data->indentation data))
+         (content (concat indentation str "\n"))
+         (point (point)))
+    (print-ln-delete-current)
+    (insert content)
+    (goto-char point)))
+
 (defun print-ln-delete-at-point ()
   (interactive)
-  (print-ln-delete-current))
+  (let ((println-inhibit-modification-hooks t))
+    (print-ln-delete-current)))
 
 (defun print-ln-find-overlay-specifying (prop)
   (let ((overlays (overlays-at (point))))
@@ -343,12 +461,21 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
     ""))
 
 (defun println-to-string (item identifier)
-  (when-let ((basic-renderer (gethash major-mode println-basic-renderer)))
-    (funcall basic-renderer item identifier)))
+  (cond ((println-item-data-p item)
+         (when-let ((basic-renderer (gethash major-mode println-basic-renderer)))
+           (propertize (funcall basic-renderer (println-item-data->item item) identifier) 'item-data item)))
+        ((println-stamp-data-p item)
+         (when-let ((stamp-renderer (gethash major-mode println-stamp-renderer)))
+           (propertize (funcall stamp-renderer (println-stamp-data->order item)) 'item-data item)))))
 
 (defun println-to-string-aligned (item longest identifier)
-  (when-let ((aligned-renderer (gethash major-mode println-aligned-renderer)))
-    (funcall aligned-renderer item longest identifier)))
+  (message "println-to-string-aligned HERE %s %s %s" (println-item-data-p item) (println-stamp-data-p item) item)
+  (cond ((println-item-data-p item)
+         (when-let ((aligned-renderer (gethash major-mode println-aligned-renderer)))
+           (propertize (funcall aligned-renderer (println-item-data->item item) longest identifier) 'item-data item)))
+        ((println-stamp-data-p item)
+         (when-let ((stamp-renderer (gethash major-mode println-stamp-renderer)))
+           (propertize (funcall stamp-renderer (println-stamp-data->order item)) 'item-data item)))))
 
 (defun println-scala-to-single-line-string (item)
   (concat "\", " (println-safe-string item) ": \" + " item))
@@ -364,24 +491,26 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 
 (defun println-render-single-line (items identifier)
   (when-let ((single-line-renderer (gethash major-mode println-single-line-renderer)))
-    (funcall single-line-renderer items identifier)))
+    ;; TODO
+    (funcall single-line-renderer (mapcar #'println-item-data->item (seq-filter #'println-item-data-p items)) identifier)))
 
 (defun println-multiline-p (data)
-  (print-ln-flags->multiline (print-ln-data->flags data)))
+  (print-ln-flags->multiline (println-cluster-data->flags data)))
 
 (defun println-align-p (data)
-  (print-ln-flags->align (print-ln-data->flags data)))
+  (print-ln-flags->align (println-cluster-data->flags data)))
 
 (defun println-show-identifier-p (data)
-  (print-ln-flags->show-identifier (print-ln-data->flags data)))
+  (print-ln-flags->show-identifier (println-cluster-data->flags data)))
 
 (defun println-render (data)
-  (let ((items (print-ln-data->items data))
-        (identifier (when (println-show-identifier-p data) (print-ln-data->identifier data)))
-        (indentation (s-pad-left (current-indentation) " " " ")))
+  (let ((items (println-cluster-data->items data))
+        (identifier (when (println-show-identifier-p data) (println-cluster-data->identifier data)))
+        (indentation (println-cluster-data->indentation data)))
     (if (println-multiline-p data)
         (if (println-align-p data)
-            (let ((longest (seq-max (seq-map (lambda (it) (string-width (or it ""))) items))))
+            (let* ((abc (seq-map (lambda (item) (string-width (or (println-item-data->item item) ""))) (seq-filter #'println-item-data-p items)))
+                   (longest (if abc (seq-max abc) "")))
               (mapconcat (lambda (item)
                            (println-to-string-aligned item longest identifier)) items (concat "\n" indentation)))
           (mapconcat (lambda (item)
@@ -396,17 +525,27 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 
 (defun println-search-identifier ()
   (when-let ((identifier-founder (gethash major-mode println-identifier-founder)))
+    (message "identifier-founder %s " identifier-founder)
     (funcall identifier-founder)))
 
-(defun println (prefix)
-  (interactive "p")
-  (when (println-get-data)
-    (print-ln-delete-current))
+(defun println2 ()
+  (interactive)
+  (message "HIIIII"))
 
+(defun println-indentation ()
+  (save-excursion (forward-line) (indent-according-to-mode) (if indent-tabs-mode
+                                                                (s-pad-left (/ (current-indentation) tab-width) "\t" "\t")
+                                                              (s-pad-left (current-indentation) " " " "))))
+
+(defun println-standard (prefix)
+  (when (println-get-data)
+      (print-ln-delete-current))
   (let* ((kill-ring (println-preprocess-kill-ring))
          (identifier (println-search-identifier))
-         (flags (print-ln-flags-create :multiline t :align nil :show-identifier t))
-         (data (print-ln-data-create :items nil :identifier identifier :flags flags)))
+         (flags (println-preferences->flags println-global-preferences))
+         (indentation (println-indentation))
+         (data (println-cluster-data-create :items nil :identifier identifier :flags flags :indentation indentation)))
+    (message "identifier %s" identifier)
     (dotimes (item (min prefix (length kill-ring)))
       (let ((current (nth item kill-ring)))
         (println-data-add-item data current)))
@@ -414,19 +553,60 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
     (forward-line)
     (print-ln-render data)))
 
+(defun print-ln-add-stamp ()
+  (when (println-get-data)
+    (print-ln-delete-current))
+  (message "HERE AAAA")
+  (let* ((identifier (println-search-identifier))
+         (flags (println-preferences->flags println-global-preferences))
+         (indentation (println-indentation))
+         (data (println-cluster-data-create
+                :items (list (println-stamp-data-create :order (setq println-counter (1+ println-counter))))
+                :identifier identifier
+                :flags flags
+                :indentation indentation)))
+    (message "data %s" identifier)
+    ;; (dotimes (item (min prefix (length kill-ring)))
+    ;;   (let ((current (nth item kill-ring)))
+    ;;     (println-data-add-item data current)))
+
+    (forward-line)
+    (print-ln-render data)))
+
+(defun println (prefix)
+  (interactive "p")
+  (let ((println-inhibit-modification-hooks t))
+    (pcase (println-preferences->mode println-global-preferences)
+      (:item (println-standard prefix))
+      (:stamp (print-ln-add-stamp))
+      (_ (error "Unknown mode %s" (println-preferences->mode println-global-preferences))))
+    ))
+
 (defun print-ln-render (data)
   (let ((str (println-render data)))
     (print-ln-render-content data str)))
 
-(defun print-ln-render-2 (data counter)
-  (print-ln-render-content data (format "println(\"HERE %s%s%s\")" counter counter counter)))
-
 (defun println-modification (overlay after beginning end &optional pre-length)
   (message "overlay %s after %s start %s-%s pre-length %s" overlay after beginning end pre-length))
 
+(defun print-ln-text-prop-to-overlay (beg end)
+  (let ((a beg) (b beg) overlay)
+    (while (not (eq a end))
+      (setq a (next-single-property-change b :print-ln-current nil end)
+            b (next-single-property-change a :print-ln-current nil end)
+            overlay (make-overlay a b nil nil t))
+      (overlay-put overlay 'face 'print-ln-diff-hunk-heading-2)
+      (overlay-put overlay :print-ln-current (get-text-property a :print-ln-current))
+      (overlay-put overlay 'modification-hooks '(println-modify))
+      (overlay-put overlay 'insert-in-front-hooks '(println-insert-in-front))
+      (overlay-put overlay 'insert-behind-hooks '(println-insert-behind))
+      (overlay-put overlay 'evaporate t))
+
+    (remove-list-of-text-properties beg end '(:print-ln-current))))
+
 (defun print-ln-render-content (data content)
-  (indent-according-to-mode)
-  (let* ((indentation (s-pad-left (current-indentation) " " " "))
+  ;(indent-according-to-mode)
+  (let* ((indentation (println-cluster-data->indentation data))
          (content (concat indentation content "\n"))
          (start (line-beginning-position)))
     (beginning-of-line nil)
@@ -442,80 +622,97 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
       ;;(put-text-property start (point) 'print-ln data)
       ;;(put-text-property start (point) 'keymap print-ln-keymap)
 
+      (print-ln-text-prop-to-overlay start (point))
       (backward-char))))
 
-(defun println-insert-in-front (start end)
+(defun println-insert-in-front (overlay after start end &optional pre-change-len)
 
   (message "[println-insert-in-front] %s %s" start end))
 
 (defvar println-inhibit-modification-hooks nil)
 
-(defun println-modify (start end)
-  (message "[MODIFY] star t %s end %s undo-in-progress %s" start end undo-in-progress)
-  (when (and
-         (not undo-in-progress)
-         (not println-inhibit-modification-hooks)
-         (print-ln-find-overlay-specifying 'print-ln-p))
-    (let* ((inhibit-modification-hooks t)
-           (inserted (buffer-substring-no-properties start end))
-           (overlay (print-ln-find-overlay-specifying 'print-ln))
+(defun println-modify (overlay after start end &optional pre-change-len)
+  (when (not after)
+    (message "%s [MODIFY.BEFORE] start %s end %s after %s pre-change-len %s" overlay start end after pre-change-len))
+  (when (and after (not undo-in-progress) (not println-inhibit-modification-hooks))
+    (message "%s [MODIFY.AFTER ] start %s end %s after %s pre-change-len %s" overlay start end after pre-change-len)
+    (let* ((inserted (buffer-substring-no-properties start end))
+           (current-item (overlay-get overlay :print-ln-current))
+           (modified-item (buffer-substring-no-properties (overlay-start overlay) (overlay-end overlay)))
+           (print-ln-overlay (print-ln-find-overlay-specifying 'print-ln))
+           (data (println-get-data))
+           (line-number (line-number-at-pos))
            (point (point))
-           (current-item (get-text-property (1- point) :print-ln-current))
-           ;;(data (overlay-get overlay 'print-ln))
-           (start2 (previous-single-property-change start :print-ln-current nil (line-beginning-position)))
-           (end2 (next-single-property-change end :print-ln-current nil (line-end-position)))
-           (left (buffer-substring-no-properties start2 start))
-           (right (buffer-substring-no-properties end (if (eq end2 (line-end-position)) (1- end2) end2)))
-           (modified-item (concat left right))
-           (search-for (concat current-item "[[:space:]]*:")))
+           (cc (current-column))
+           (before (progn (save-excursion
+                           (re-search-backward (concat current-item "\\([[:space:]]*\\):") (line-beginning-position)))
+                         (match-string-no-properties 1))))
+      (message "[println-modify] BEFORE1 current-column: %s" (current-column))
+      (println-data-update-item print-ln-overlay current-item modified-item)
+      (print-ln-delete-current)
+      (print-ln-render data)
+      (message "[println-modify] BEFORE2 current-column: %s %s" (current-column) (- end start pre-change-len))
+      ;;(goto-char (point-min))
+      ;;(forward-line line-number)
 
-      (put-text-property start2 end2 :print-ln-current modified-item)
-      (message "[MODIFY] star t %s end  %s :%s:  mi: %s search-for %s" start end inserted modified-item search-for)
+      (cond ((= pre-change-len 0)
+             (goto-char (+ (line-beginning-position (1+ (- line-number (line-number-at-pos) ))) cc (- end start pre-change-len)))
+             (save-excursion
+               (re-search-backward (concat modified-item "\\([[:space:]]*\\):") (line-beginning-position)))
+             (unless (and
+                      (s-blank? (match-string-no-properties 1))
+                      (s-blank? before))
+               (backward-char 1)))
+            ((> pre-change-len 0)
+             (goto-char (+ (line-beginning-position (1+ (- line-number (line-number-at-pos) ))) cc (- end start pre-change-len)))
+             (save-excursion
+               (re-search-backward (concat modified-item "\\([[:space:]]*\\):") (line-beginning-position)))
+             (unless (s-blank? (match-string-no-properties 1))
+               (forward-char 1))))
 
-      (when (re-search-backward search-for (line-beginning-position) t)
-        (replace-match (concat modified-item ":"))
-        (println-data-update-item overlay current-item modified-item)
-        (goto-char  (1- point)))
 
-      (message "[MODIFY] start2 %s end2 %s eol %s current %s" start2 end2 (line-end-position) current-item))))
+        ;; )
+      ;; (goto-char (+ point (- end start pre-change-len)))
+      ;; (when (println-align-p data)
+      ;;   (let ((point (point)))
+      ;;     (save-excursion (re-search-backward (concat modified-item "\\([[:space:]]*\\):") (line-beginning-position)))
+      ;;     (message "[println-modify] (match-beginning 1): %s %s blank? %s current-column %s" (match-beginning 1) (match-end 1) (s-blank? (match-string-no-properties 1))  (current-column))
+      ;;     (if (s-blank? (match-string-no-properties 1))
+      ;;         (forward-char 1)
+      ;;       (backward-char 1))))
+      ;; (message "[println-modify] AFTER   current-column: %s" (current-column))
+      )))
 
-(defun println-insert-behind (start end)
-  (message "[BEHIND] star t %s end %s undo-in-progress %s" start end undo-in-progress)
-  (when (not undo-in-progress)
-    (let* ((inhibit-modification-hooks t)
-           (inserted (buffer-substring-no-properties start end))
-           (overlay (print-ln-find-overlay-specifying 'print-ln))
-           (point (point))
-           (current-item (get-text-property (1- point) :print-ln-current))
-           (data (overlay-get overlay 'print-ln))
-           (start2 (previous-single-property-change point :print-ln-current nil (line-beginning-position)))
-           (end2 (next-single-property-change point :print-ln-current nil (line-end-position)))
-           (modified-item (buffer-substring-no-properties start2 (if (eq end2 (line-end-position)) (1- end2) end2)))
-           (search-for (concat current-item "[[:space:]]*:")))
+(defun abc (str)
+  (message "[a] abc: %s" abc)
 
-      ;; (concat (car (print-ln-data->items data)) inserted)
-      (println-data-update-item overlay current-item modified-item)
-      ;; (print-ln-delete-current)
-      ;; (print-ln-render data)
-      ;; (goto-char (1+ point))
-      (when (re-search-backward search-for (line-beginning-position) t)
-        (replace-match (concat modified-item ":"))
-        (put-text-property (1+ start2) (1+ end2) :print-ln-current modified-item)
-        (goto-char  (1+ point)))
+;;         1234567890123456789012345678901234567890
 
-      (message "[BEHIND] star t %s end  %s :%s:" start end inserted)
-      (message "[BEHIND] start2 %s end2 %s eol %s current '%s' modified-item '%s'" start2 end2 (line-end-position) current-item modified-item))))
+
+  (let ((point (point)))
+    (re-search-backward (concat str "\\([[:space:]]*\\):") (line-beginning-position))
+    (goto-char point)
+    (if (s-blank? (match-string-no-properties 1))
+        (forward-char 1)
+      (backward-char 1))))
+
+(defun println-insert-behind (overlay after start end &optional pre-change-len)
+
+  (when (and after (not undo-in-progress) (not println-inhibit-modification-hooks))
+
+    (message "[BEHIND] star t %s end %s undo-in-progress %s" start end undo-in-progress)
+    (println-modify overlay after start end pre-change-len)))
+
+(defun println-editable (item)
+  (propertize item :print-ln-current item))
 
 ;; Scala support
 (defun println-scala-to-string (item identifier)
-  (message "[println-scala-to-string] identifier: %s" identifier)
-  (message "[println-scala-to-string] itAem     : %s" itAem)
-
   (concat "println(\"" (println-identifier identifier) (println-safe-string item) ": \" + "
-          (propertize item 'modification-hooks '(println-modify)) ")"))
+          (println-editable item) ")"))
 
 (defun println-scala-to-string-aligned (item longest identifier)
-  (concat "println(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\" + " item ")"))
+  (concat "println(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\" + " (println-editable item) ")"))
 
 (defun println-scala-render-single-line (items identifier)
   (concat "println(\"" (println-identifier identifier) (s-chop-prefix "\", " (mapconcat #'println-scala-to-single-line-string items " + ")) ")"))
@@ -523,12 +720,8 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 (defun println-scala-identifier ()
   (format "%s.%s" (println-search-class) (println-search-def)))
 
-(defun println-editable (item)
-  (propertize item
-              :print-ln-current item
-              'modification-hooks '(println-modify)
-              'insert-in-front-hooks '(println-insert-in-front)
-              'insert-behind-hooks '(println-insert-behind)))
+(defun println-scala-stamp (order)
+  (format "println(\"HeRe %s%s%s\")" order order order))
 
 ;; Emacs Lisp support
 (defun println-emacs-lisp-to-string (item identifier)
@@ -542,7 +735,7 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
           (println-identifier identifier)
           (s-chop-prefix ", " (mapconcat #'println-emacs-lisp-to-single-line-string items ""))
           "\" "
-          (mapconcat #'identity items " ")
+          (mapconcat #'println-editable items " ")
           ")"))
 
 (defun println-emacs-lisp-search-defun ()
@@ -550,23 +743,89 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
     (re-search-backward "^(defun \\([^( ]*\\)")
     (match-string 1)))
 
-(defun println-register-major-mode (major-mode basic aligned single identifier)
+(defun println-emacs-lisp-stamp (order)
+  (format "(message \"HerE %s%s%s\")" order order order))
+
+;; GDScript support
+(defun println-gdscript-to-string (item identifier)
+  (concat "printt(\"" (println-identifier identifier) (println-safe-string item) ": \", "
+          (println-editable item) ")"))
+
+(defun println-gdscript-to-string-aligned (item longest identifier)
+  (concat "printt(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\", " (println-editable item) ")"))
+
+(defun println-gdscript-to-single-line-string (item)
+  (concat "\", " (println-safe-string item) ": \", " item))
+
+(defun println-gdscript-render-single-line (items identifier)
+  (concat "printt(\"" (println-identifier identifier) (s-chop-prefix "\", " (mapconcat #'println-gdscript-to-single-line-string items ", ")) ")"))
+
+(defun println-gdscript-identifier ()
+  (message "[println-gdscript-identifi] (println-search-gdscript-func): %s" (println-search-gdscript-func))
+  (format "%s.%s" (buffer-name) (println-search-gdscript-func)))
+
+(defun println-gdscript-stamp (order)
+  (format "printt(\"HeRe %s%s%s\")" order order order))
+
+(defun println-register-major-mode (major-mode basic aligned single identifier stamp)
   (puthash major-mode basic println-basic-renderer)
   (puthash major-mode aligned println-aligned-renderer)
   (puthash major-mode single println-single-line-renderer)
-  (puthash major-mode identifier println-identifier-founder))
+  (puthash major-mode identifier println-identifier-founder)
+  (puthash major-mode stamp println-stamp-renderer))
 
 (println-register-major-mode 'scala-mode
                              #'println-scala-to-string
                              #'println-scala-to-string-aligned
                              #'println-scala-render-single-line
-                             #'println-scala-identifier)
+                             #'println-scala-identifier
+                             #'println-scala-stamp)
 
 (println-register-major-mode 'emacs-lisp-mode
                              #'println-emacs-lisp-to-string
                              #'println-emacs-lisp-to-string-aligned
                              #'println-emacs-lisp-render-single-line
-                             #'println-emacs-lisp-search-defun)
+                             #'println-emacs-lisp-search-defun
+                             #'println-emacs-lisp-stamp)
+
+(println-register-major-mode 'gdscript-mode
+                             #'println-gdscript-to-string
+                             #'println-gdscript-to-string-aligned
+                             #'println-gdscript-render-single-line
+                             #'println-gdscript-identifier
+                             #'println-gdscript-stamp)
+
+
+(defvar println-xml-section-start-re "^\\[XML\\.START\\]$")
+(defvar println-xml-section-end-re "^\\[XML\\.END\\]$")
+
+(defvar println-sbt-output "")
+
+(defun println-xml (sbt-output)
+  (when (or
+         (string-match println-xml-section-start-re println-sbt-output)
+         (string-match println-xml-section-start-re sbt-output))
+    (setq println-sbt-output (concat println-sbt-output sbt-output))
+    (when-let ((start (match-end 0))
+               (end (when (string-match println-xml-section-end-re println-sbt-output)
+                      (match-beginning 0))))
+      (let ((xml (substring println-sbt-output start end)))
+        (setq println-sbt-output "")
+        (unless (s-blank? xml)
+          (let ((buffer (generate-new-buffer (format "*XML at %s in %s* " (current-time-string) (buffer-name)))))
+            (with-current-buffer buffer
+              (insert (s-trim xml))
+              (nxml-pretty-format)
+              (toggle-truncate-lines 1)
+              (display-buffer (current-buffer)))))))))
+
+
+(defun println-comint ()
+  (dolist (buffer (buffer-list) nil)
+    (with-current-buffer buffer
+      (when (eq 'sbt-mode major-mode)
+        (unless (member 'println-xml comint-output-filter-functions)
+          (add-hook 'comint-output-filter-functions 'println-xml))))))
 
 (defun print-ln-print (num prompt)
   (let ((on-empty-line (string-blank-p (thing-at-point 'line t))))

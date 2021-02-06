@@ -257,6 +257,9 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 (defun println-search-gdscript-func ()
   (println-search-regex "func" 1))
 
+(defun println-search-javascript-func ()
+  (println-search-regex "^const" 1))
+
 (defun print-ln-toggle-identifier (data)
   (let* ((flags (println-cluster-data->flags data))
          (global (println-preferences->flags println-global-preferences))
@@ -767,6 +770,26 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
 (defun println-gdscript-stamp (order)
   (format "printt(\"HeRe %s%s%s\")" order order order))
 
+;; Javascript support
+(defun println-javascript-to-string (item identifier)
+  (concat "console.log(\"" (println-identifier identifier) (println-safe-string item) ": \", "
+          (println-editable item) ")"))
+
+(defun println-javascript-to-string-aligned (item longest identifier)
+  (concat "console.log(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\", " (println-editable item) ")"))
+
+(defun println-javascript-to-single-line-string (item)
+  (concat "\", " (println-safe-string item) ": \", " item))
+
+(defun println-javascript-render-single-line (items identifier)
+  (concat "console.log(\"" (println-identifier identifier) (s-chop-prefix "\", " (mapconcat #'println-javascript-to-single-line-string items ", ")) ")"))
+
+(defun println-javascript-identifier ()
+  (format "%s.%s" (buffer-name) (println-search-javascript-func)))
+
+(defun println-javascript-stamp (order)
+  (format "console.log(\"HeRe %s%s%s\")" order order order))
+
 (defun println-register-major-mode (major-mode basic aligned single identifier stamp)
   (puthash major-mode basic println-basic-renderer)
   (puthash major-mode aligned println-aligned-renderer)
@@ -794,6 +817,13 @@ case class SumInfo(lookup: Map[Sum, Set[FormComponentId]]) extends AnyVal {
                              #'println-gdscript-render-single-line
                              #'println-gdscript-identifier
                              #'println-gdscript-stamp)
+
+(println-register-major-mode 'js-mode
+                             #'println-javascript-to-string
+                             #'println-javascript-to-string-aligned
+                             #'println-javascript-render-single-line
+                             #'println-javascript-identifier
+                             #'println-javascript-stamp)
 
 
 (defvar println-xml-section-start-re "^\\[XML\\.START\\]$")

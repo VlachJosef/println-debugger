@@ -49,6 +49,7 @@
 (defvar println-single-line-renderer (make-hash-table))
 (defvar println-identifier-founder (make-hash-table))
 (defvar println-stamp-renderer (make-hash-table))
+(defvar println-foreach-renderer (make-hash-table))
 
 (defvar println-counter 0)
 
@@ -188,7 +189,7 @@
                (:constructor print-ln-flags-create)
                (:copier nil)
                (:conc-name print-ln-flags->))
-  multiline align show-identifier )
+  multiline align show-identifier)
 
 (defconst println-default-flags
   (print-ln-flags-create
@@ -220,12 +221,7 @@
         (print-ln-delete-current)
       (setf (println-cluster-data->items data)
             (reverse (cdr (reverse items))))
-      (print-ln-delete-current)
-      (print-ln-render data))))
-
-(defun print-ln-foreach()
-  (interactive)
-  (message "HELLO FROM print-ln-foreach"))
+      (println-refresh data))))
 
 (defun print-ln-toggle-identifier (data)
   (let* ((flags (println-cluster-data->flags data))
@@ -251,33 +247,49 @@
 (defun println-get-data ()
   (get-char-property (point) 'print-ln))
 
+(defmacro println-with-cluster-data (cluster-data body)
+  (declare (indent 1) (debug t))
+  `(let* ((,cluster-data (println-get-data)))
+     (if (println-cluster-data-p ,cluster-data)
+         ,body
+       (user-error "No cluster data found at the point."))))
+
+(defmacro println-modify-and-refresh-cluster (cluster-data body)
+  (declare (indent 1) (debug t))
+  `(println-with-cluster-data ,cluster-data
+     (progn ,body
+            (let ((old-line-num (line-number-at-pos))
+                  (old-column (current-column))
+                  (old-eol (eolp)))
+              (println-refresh ,cluster-data)
+              (goto-char (point-min))
+              (forward-line (1- old-line-num))
+              (goto-char (if old-eol
+                             (line-end-position)
+                           (min (line-end-position) (+ (line-beginning-position) old-column))))))))
+
 (defun println-get-line-data ()
-  (let ((line (thing-at-point 'line)))
-    (get-text-property (next-single-property-change 0 'item-data line) 'item-data line)))
+  (if-let ((item-data (get-text-property (if (eolp) (1- (point)) (point)) 'item-data)))
+      item-data
+    (let ((line (thing-at-point 'line)))
+      (get-text-property (next-single-property-change 0 'item-data line) 'item-data line))))
 
 (defun print-ln-align ()
   (interactive)
-  (let ((println-inhibit-modification-hooks t)
-        (data (println-get-data)))
-    (print-ln-toggle-align data)
-    (print-ln-delete-current)
-    (print-ln-render data)))
+  (println-modify-and-refresh-cluster data
+    (print-ln-toggle-align data)))
 
 (defun print-ln-multiline ()
   (interactive)
   (let ((println-inhibit-modification-hooks t)
         (data (println-get-data)))
     (print-ln-toggle-multiline data)
-    (print-ln-delete-current)
-    (print-ln-render data)))
+    (println-refresh data)))
 
 (defun print-ln-identifier ()
   (interactive)
-  (let ((println-inhibit-modification-hooks t)
-        (data (println-get-data)))
-    (print-ln-toggle-identifier data)
-    (print-ln-delete-current)
-    (print-ln-render data)))
+  (println-modify-and-refresh-cluster data
+    (print-ln-toggle-identifier data)))
 
 (defun println-next-kill (data)
   (let ((items (seq-map #'println-item-data->item
@@ -296,8 +308,7 @@
     (if (not next-kill)
         (message "No more elements in kill-ring.")
       (println-data-add-item data next-kill)
-      (print-ln-delete-current)
-      (print-ln-render data))))
+      (println-refresh data))))
 
 (defun println-pre-process-kill-ring-element (element)
   (s-collapse-whitespace
@@ -340,8 +351,7 @@
 
     (let ((point (line-beginning-position))
           (println-inhibit-modification-hooks t))
-      (print-ln-delete-current)
-      (print-ln-render data)
+      (println-refresh data)
       (goto-char point)
       (goto-char (line-end-position)))))
 
@@ -352,13 +362,9 @@
 
 (defun print-ln-reverse ()
   (interactive)
-  (let* ((data (println-get-data))
-         (items (println-cluster-data->items data)))
+  (println-modify-and-refresh-cluster data
     (setf (println-cluster-data->items data)
-          (reverse items))
-    (print-ln-delete-current)
-    (print-ln-render data)))
-
+          (reverse (println-cluster-data->items data)))))
 
 (defun println-exclude-current ()
   (interactive)
@@ -369,21 +375,39 @@
 
 (defun print-ln-literal/identifier ()
   (interactive)
-  (let* ((data (println-get-data))
-         (line-data (println-get-line-data))
-         (type (println-item-data->type line-data)))
-    (let ((next-type
-           (pcase (println-item-type->type type)
-             (:rich :string-literal)
-             (:string-literal :plain)
-             (:plain :rich))))
-      (setf (println-item-type->type type) next-type)
-      (print-ln-delete-current)
-      (print-ln-render data))))
+  (println-modify-and-refresh-cluster data
+    (if (println-singleline-p data)
+        (message "Switching rich/string-literal/value is not supported in single line mode.")
+      (if (println-align-p data)
+          (message "Switching rich/string-literal/value is not supported in aligned mode.")
+        (let* ((line-data (println-get-line-data))
+               (type (println-item-data->type line-data)))
+          (let ((next-type
+                 (pcase (println-item-type->type type)
+                   (:rich :string-literal)
+                   (:string-literal :plain)
+                   (:plain :rich)
+                   (_ :rich))))
+            (setf (println-item-type->type type) next-type)))))))
+
+(defun print-ln-foreach ()
+  (interactive)
+  (println-modify-and-refresh-cluster data
+    (if (println-singleline-p data)
+        (message "Foreach is not supported in single line mode.")
+      (if (println-align-p data)
+          (message "Foreach is not supported in aligned mode.")
+        (let* ((line-data (println-get-line-data))
+               (type (println-item-data->type line-data)))
+          (let ((next-type
+                 (pcase (println-item-type->type type)
+                   (:foreach :foreach-delimited)
+                   (:foreach-delimited :foreach)
+                   (_ :foreach))))
+            (setf (println-item-type->type type) next-type)))))))
 
 (defvar print-ln-keymap
   (let ((map (make-sparse-keymap)))
-    ;;(define-key map (kbd "C-i") 'print-ln-foreach)
     (define-key map (kbd "C-c C-c") 'print-ln-commit)
     (define-key map (kbd "RET") 'print-ln-newline)
     (define-key map (kbd "C-c _") 'print-ln-scala-for-comprehension)
@@ -398,6 +422,7 @@
     (define-key map (kbd "C-M-n") 'print-ln-increase)
     (define-key map (kbd "C-M-d") 'print-ln-delete-at-point)
     (define-key map (kbd "C-M-x") 'print-ln-literal/identifier)
+    (define-key map (kbd "C-M-c") 'print-ln-foreach)
     map)
   "Keymap for print-ln managed region.")
 
@@ -449,24 +474,29 @@
       (format "[%s] " identifier)
     ""))
 
-(defun println-apply-renderer-by-item-type (item identifier)
-  (pcase (println-item-type->type (println-item-data->type item))
-    (:rich
-     (if-let ((basic-renderer (gethash major-mode println-basic-renderer)))
-         (funcall basic-renderer (println-item-data->item item) identifier)
-       (user-error "No basic renderer found for %s." major-mode)))
-    (:string-literal
-     (if-let ((string-literal-renderer (gethash major-mode println-basic-literal-string-renderer)))
-         (funcall string-literal-renderer (println-item-data->item item))
-       (user-error "No string literal renderer found for %s." major-mode)))
-    (:plain
-     (if-let ((value-renderer (gethash major-mode println-basic-value-renderer)))
-         (funcall value-renderer (println-item-data->item item))
-       (user-error "No value renderer found for %s." major-mode)))))
+(defun println-apply-renderer-by-item-type (item identifier indentation)
+  (let ((type (println-item-type->type (println-item-data->type item))))
+    (pcase type
+      (:rich
+       (if-let ((basic-renderer (gethash major-mode println-basic-renderer)))
+           (funcall basic-renderer (println-item-data->item item) identifier)
+         (user-error "No basic renderer found for %s." major-mode)))
+      (:string-literal
+       (if-let ((string-literal-renderer (gethash major-mode println-basic-literal-string-renderer)))
+           (funcall string-literal-renderer (println-item-data->item item))
+         (user-error "No string literal renderer found for %s." major-mode)))
+      (:plain
+       (if-let ((value-renderer (gethash major-mode println-basic-value-renderer)))
+           (funcall value-renderer (println-item-data->item item))
+         (user-error "No value renderer found for %s." major-mode)))
+      ((or :foreach :foreach-delimited)
+       (if-let ((foreach-renderer (gethash major-mode println-foreach-renderer)))
+           (s-replace "\n"  (format "\n%s" indentation) (funcall foreach-renderer (println-item-data->item item) type))
+         (user-error "No foreach renderer found for %s." major-mode))))))
 
-(defun println-to-string (item identifier)
+(defun println-to-string (item identifier indentation)
   (cond ((println-item-data-p item)
-         (propertize (println-apply-renderer-by-item-type item identifier) 'item-data item))
+         (propertize (println-apply-renderer-by-item-type item identifier indentation) 'item-data item))
         ((println-stamp-data-p item)
          (if-let ((stamp-renderer (gethash major-mode println-stamp-renderer)))
              (propertize (funcall stamp-renderer (println-stamp-data->order item)) 'item-data item)
@@ -488,6 +518,9 @@
 (defun println-multiline-p (data)
   (print-ln-flags->multiline (println-cluster-data->flags data)))
 
+(defun println-singleline-p (data)
+  (not (println-multiline-p data)))
+
 (defun println-align-p (data)
   (print-ln-flags->align (println-cluster-data->flags data)))
 
@@ -505,7 +538,7 @@
               (mapconcat (lambda (item)
                            (println-to-string-aligned item longest identifier)) items (concat "\n" indentation)))
           (mapconcat (lambda (item)
-                       (println-to-string item identifier)) items (concat "\n" indentation)))
+                       (println-to-string item identifier indentation)) items (concat "\n" indentation)))
       (println-render-single-line items identifier))))
 
 (defun println-search-identifier ()
@@ -568,6 +601,10 @@
       (:item (println-standard prefix))
       (:stamp (print-ln-add-stamp))
       (_ (error "Unknown mode %s" (println-preferences->mode println-global-preferences))))))
+
+(defun println-refresh (data)
+  (print-ln-delete-current)
+  (print-ln-render data))
 
 (defun print-ln-render (data)
   (let ((str (println-render data)))
@@ -636,8 +673,7 @@
                           (match-string-no-properties 1))))
       (message "[println-modify] BEFORE1 current-column: %s" (current-column))
       (println-data-update-item print-ln-overlay current-item modified-item)
-      (print-ln-delete-current)
-      (print-ln-render data)
+      (println-refresh data)
       (message "[println-modify] BEFORE2 current-column: %s %s" (current-column) (- end start pre-change-len))
       ;;(goto-char (point-min))
       ;;(forward-line line-number)
@@ -691,14 +727,15 @@
 (defun println-editable (item)
   (propertize item :print-ln-current item))
 
-(defun println-register-major-mode (major-mode basic literal-string value aligned single identifier stamp)
+(defun println-register-major-mode (major-mode basic literal-string value aligned single identifier stamp foreach)
   (puthash major-mode basic println-basic-renderer)
   (puthash major-mode literal-string println-basic-literal-string-renderer)
   (puthash major-mode value println-basic-value-renderer)
   (puthash major-mode aligned println-aligned-renderer)
   (puthash major-mode single println-single-line-renderer)
   (puthash major-mode identifier println-identifier-founder)
-  (puthash major-mode stamp println-stamp-renderer))
+  (puthash major-mode stamp println-stamp-renderer)
+  (puthash major-mode foreach println-foreach-renderer))
 
 
 (defun print-ln-print (num prompt)

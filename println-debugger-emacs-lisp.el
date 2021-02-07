@@ -44,6 +44,9 @@
 (defun println-emacs-lisp-stamp (order)
   (format "(message \"HerE %s%s%s\")" order order order))
 
+(defun println-emacs-lisp-foreach (item type)
+  (format "(message \"FOREACH\")"))
+
 (println-register-major-mode 'emacs-lisp-mode
                              #'println-emacs-lisp-to-string
                              #'println-emacs-lisp-literal-string
@@ -51,6 +54,7 @@
                              #'println-emacs-lisp-to-string-aligned
                              #'println-emacs-lisp-render-single-line
                              #'println-emacs-lisp-search-defun
-                             #'println-emacs-lisp-stamp)
+                             #'println-emacs-lisp-stamp
+                             #'println-emacs-lisp-foreach)
 
 (provide 'println-debugger-emacs-lisp)

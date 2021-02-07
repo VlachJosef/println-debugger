@@ -53,6 +53,13 @@
 (defun println-scala-stamp (order)
   (format "println(\"HeRe %s%s%s\")" order order order))
 
+(defun println-scala-foreach (item type)
+  (pcase type
+    (:foreach
+     (format "%s.foreach(println)" item))
+    (:foreach-delimited
+     (format "println(\"%s START\")\n%s.foreach(println)\nprintln(\"%s END\")" item item item))))
+
 (println-register-major-mode 'scala-mode
                              #'println-scala-to-string
                              #'println-scala-literal-string
@@ -60,6 +67,7 @@
                              #'println-scala-to-string-aligned
                              #'println-scala-render-single-line
                              #'println-scala-identifier
-                             #'println-scala-stamp)
+                             #'println-scala-stamp
+                             #'println-scala-foreach)
 
 (provide 'println-debugger-scala)

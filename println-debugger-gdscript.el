@@ -41,6 +41,9 @@
 (defun println-gdscript-stamp (order)
   (format "printt(\"HeRe %s%s%s\")" order order order))
 
+(defun println-gdscript-foreach (item type)
+  (format "printt(\"FOREACH\")"))
+
 (println-register-major-mode 'gdscript-mode
                              #'println-gdscript-to-string
                              #'println-gdscript-literal-string
@@ -48,6 +51,7 @@
                              #'println-gdscript-to-string-aligned
                              #'println-gdscript-render-single-line
                              #'println-gdscript-identifier
-                             #'println-gdscript-stamp)
+                             #'println-gdscript-stamp
+                             #'println-gdscript-foreach)
 
 (provide 'println-debugger-gdscript)

@@ -41,6 +41,9 @@
 (defun println-javascript-stamp (order)
   (format "console.log(\"HeRe %s%s%s\")" order order order))
 
+(defun println-javascript-foreach (item type)
+  (format "console.log(\"FOREACH\")"))
+
 (println-register-major-mode 'js-mode
                              #'println-javascript-to-string
                              #'println-javascript-literal-string
@@ -48,6 +51,7 @@
                              #'println-javascript-to-string-aligned
                              #'println-javascript-render-single-line
                              #'println-javascript-identifier
-                             #'println-javascript-stamp)
+                             #'println-javascript-stamp
+                             #'println-javascript-foreach)
 
 (provide 'println-debugger-javascript)

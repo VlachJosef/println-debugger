@@ -38,7 +38,7 @@
 
 (defun println-emacs-lisp-search-defun ()
   (save-excursion
-    (re-search-backward "^(defun \\([^( ]*\\)")
+    (re-search-backward "^(defun \\([^( ]*\\)" nil t)
     (match-string 1)))
 
 (defun println-emacs-lisp-stamp (order)

@@ -14,8 +14,8 @@
 (require 's)
 (eval-when-compile (require 'subr-x))
 
-(defvar println-scala "println(\"%s: \" + (%s))")
-(defvar println-emacs-lisp "(message \"%s: %%s\" %s)")
+;;;(defvar println-scala "println(\"%s: \" + (%s))")
+;;(defvar println-emacs-lisp "(message \"%s: %%s\" %s)")
 (defvar println-javascript "console.log('%s', %s);")
 (defvar println-haskell "putTextLn $ \"%s \" <> show %s")
 (defvar println-gdscript "print(\"%s \", str(%s))")
@@ -32,15 +32,15 @@
   '((((class color) (background dark))
      :extend t
      :background "DarkSlateBlue"))
-  "Face for print-ln generated lines."
+  "Face for lines controlled by print-ln."
   :group 'print-ln-faces)
 
-(defface print-ln-diff-hunk-heading-2
-  '((((class color) (background dark))
-     :extend t
-     :background "black"))
-  "Face for print-ln generated lines."
-  :group 'print-ln-faces)
+;; (defface print-ln-diff-hunk-heading-2
+;;   '((((class color) (background dark))
+;;      :extend t
+;;      :background "black"))
+;;   "Face for print-ln generated lines."
+;;   :group 'print-ln-faces)
 
 (defvar println-basic-renderer (make-hash-table))
 (defvar println-basic-value-renderer (make-hash-table))
@@ -78,9 +78,6 @@
                (:copier nil)
                (:conc-name println-revert-info->))
   data)
-
-
-;;(eobp)
 
 (defvar println-revert-data)
 
@@ -281,8 +278,7 @@
 
 (defun print-ln-multiline ()
   (interactive)
-  (let ((println-inhibit-modification-hooks t)
-        (data (println-get-data)))
+  (let ((data (println-get-data)))
     (print-ln-toggle-multiline data)
     (println-refresh data)))
 
@@ -302,8 +298,7 @@
 
 (defun print-ln-increase ()
   (interactive)
-  (let* ((println-inhibit-modification-hooks t)
-         (data (println-get-data))
+  (let* ((data (println-get-data))
          (next-kill (println-next-kill data)))
     (if (not next-kill)
         (message "No more elements in kill-ring.")
@@ -326,8 +321,7 @@
 
 (defun print-ln-decrease ()
   (interactive)
-  (let ((println-inhibit-modification-hooks t)
-        (data (println-get-data)))
+  (let ((data (println-get-data)))
     (println-table-remove-row data)))
 
 
@@ -349,8 +343,7 @@
         (setf (nth index items) item-new)
       (error "Index of element '%s' not found" item-old))
 
-    (let ((point (line-beginning-position))
-          (println-inhibit-modification-hooks t))
+    (let ((point (line-beginning-position)))
       (println-refresh data)
       (goto-char point)
       (goto-char (line-end-position)))))
@@ -370,16 +363,15 @@
   (interactive)
   (let* ((data (println-get-data))
          (items (println-cluster-data->items data)))
-    (message "[println-exclude-current] items: %s" items)
-    ))
+    (message "[println-exclude-current] items: %s" items)))
 
 (defun print-ln-literal/identifier ()
   (interactive)
   (println-modify-and-refresh-cluster data
     (if (println-singleline-p data)
-        (message "Switching rich/string-literal/value is not supported in single line mode.")
+        (print-ln-toggle-multiline data)
       (if (println-align-p data)
-          (message "Switching rich/string-literal/value is not supported in aligned mode.")
+          (print-ln-toggle-align data)
         (let* ((line-data (println-get-line-data))
                (type (println-item-data->type line-data)))
           (let ((next-type
@@ -393,10 +385,12 @@
 (defun print-ln-foreach ()
   (interactive)
   (println-modify-and-refresh-cluster data
-    (if (println-singleline-p data)
-        (message "Foreach is not supported in single line mode.")
-      (if (println-align-p data)
-          (message "Foreach is not supported in aligned mode.")
+    (if (println-stamp-data-p (println-get-line-data))
+        (message "Can't apply foreach on stamp data")
+      (if (println-singleline-p data)
+          (print-ln-toggle-multiline data)
+        (when (println-align-p data)
+          (print-ln-toggle-align data))
         (let* ((line-data (println-get-line-data))
                (type (println-item-data->type line-data)))
           (let ((next-type
@@ -456,8 +450,7 @@
 
 (defun print-ln-delete-at-point ()
   (interactive)
-  (let ((println-inhibit-modification-hooks t))
-    (print-ln-delete-current)))
+  (print-ln-delete-current))
 
 (defun print-ln-find-overlay-specifying (prop)
   (let ((overlays (overlays-at (point))))
@@ -543,13 +536,15 @@
 
 (defun println-search-identifier ()
   (when-let ((identifier-founder (gethash major-mode println-identifier-founder)))
-    (message "identifier-founder %s " identifier-founder)
     (funcall identifier-founder)))
 
 (defun println-indentation ()
-  (save-excursion (forward-line) (indent-according-to-mode) (if indent-tabs-mode
-                                                                (s-pad-left (/ (current-indentation) tab-width) "\t" "\t")
-                                                              (s-pad-left (current-indentation) " " " "))))
+  (save-excursion
+    (forward-line)
+    (indent-according-to-mode)
+    (if indent-tabs-mode
+        (s-pad-left (/ (current-indentation) tab-width) "\t" "\t")
+      (s-pad-left (current-indentation) " " " "))))
 
 (defun println-standard (prefix)
   (when (println-get-data)
@@ -559,18 +554,15 @@
          (flags (println-preferences->flags println-global-preferences))
          (indentation (println-indentation))
          (data (println-cluster-data-create :items nil :identifier identifier :flags flags :indentation indentation)))
-    (message "identifier %s" identifier)
     (dotimes (item (min prefix (length kill-ring)))
       (let ((current (nth item kill-ring)))
         (println-data-add-item data current)))
-
     (forward-line)
     (print-ln-render data)))
 
 (defun print-ln-add-stamp ()
   (when (println-get-data)
     (print-ln-delete-current))
-  (message "HERE AAAA")
   (let* ((identifier (println-search-identifier))
          (flags (println-preferences->flags println-global-preferences))
          (indentation (println-indentation))
@@ -579,28 +571,15 @@
                 :identifier identifier
                 :flags flags
                 :indentation indentation)))
-    (message "data %s" identifier)
-    ;; (dotimes (item (min prefix (length kill-ring)))
-    ;;   (let ((current (nth item kill-ring)))
-    ;;     (println-data-add-item data current)))
-
     (forward-line)
     (print-ln-render data)))
 
-(defun println-insert-before (prefix)
-  (interactive "p")
-  (previous-line)
-  (println-insert-after prefix)
-
-  (message "HIIIII"))
-
 (defun println-insert-after (prefix)
   (interactive "p")
-  (let ((println-inhibit-modification-hooks t))
-    (pcase (println-preferences->mode println-global-preferences)
-      (:item (println-standard prefix))
-      (:stamp (print-ln-add-stamp))
-      (_ (error "Unknown mode %s" (println-preferences->mode println-global-preferences))))))
+  (pcase (println-preferences->mode println-global-preferences)
+    (:item (println-standard prefix))
+    (:stamp (print-ln-add-stamp))
+    (_ (error "Unknown mode %s" (println-preferences->mode println-global-preferences)))))
 
 (defun println-refresh (data)
   (print-ln-delete-current)
@@ -609,24 +588,6 @@
 (defun print-ln-render (data)
   (let ((str (println-render data)))
     (print-ln-render-content data str)))
-
-(defun println-modification (overlay after beginning end &optional pre-length)
-  (message "overlay %s after %s start %s-%s pre-length %s" overlay after beginning end pre-length))
-
-(defun print-ln-text-prop-to-overlay (beg end)
-  (let ((a beg) (b beg) overlay)
-    (while (not (eq a end))
-      (setq a (next-single-property-change b :print-ln-current nil end)
-            b (next-single-property-change a :print-ln-current nil end)
-            overlay (make-overlay a b nil nil t))
-      (overlay-put overlay 'face 'print-ln-diff-hunk-heading-2)
-      (overlay-put overlay :print-ln-current (get-text-property a :print-ln-current))
-      ;;(overlay-put overlay 'modification-hooks '(println-modify))
-      ;;(overlay-put overlay 'insert-in-front-hooks '(println-insert-in-front))
-      ;;(overlay-put overlay 'insert-behind-hooks '(println-insert-behind))
-      (overlay-put overlay 'evaporate t))
-
-    (remove-list-of-text-properties beg end '(:print-ln-current))))
 
 (defun print-ln-render-content (data content)
                                         ;(indent-according-to-mode)
@@ -640,89 +601,8 @@
       (overlay-put overlay 'evaporate t)
       (overlay-put overlay 'print-ln-p t)
       (overlay-put overlay 'keymap print-ln-keymap)
-      ;;(overlay-put overlay 'modification-hooks '(println-modification))
-
       (overlay-put overlay 'print-ln data)
-      ;;(put-text-property start (point) 'print-ln data)
-      ;;(put-text-property start (point) 'keymap print-ln-keymap)
-
-      (print-ln-text-prop-to-overlay start (point))
       (backward-char))))
-
-(defun println-insert-in-front (overlay after start end &optional pre-change-len)
-
-  (message "[println-insert-in-front] %s %s" start end))
-
-(defvar println-inhibit-modification-hooks nil)
-
-(defun println-modify (overlay after start end &optional pre-change-len)
-  (when (not after)
-    (message "%s [MODIFY.BEFORE] start %s end %s after %s pre-change-len %s" overlay start end after pre-change-len))
-  (when (and after (not undo-in-progress) (not println-inhibit-modification-hooks))
-    (message "%s [MODIFY.AFTER ] start %s end %s after %s pre-change-len %s" overlay start end after pre-change-len)
-    (let* ((inserted (buffer-substring-no-properties start end))
-           (current-item (overlay-get overlay :print-ln-current))
-           (modified-item (buffer-substring-no-properties (overlay-start overlay) (overlay-end overlay)))
-           (print-ln-overlay (print-ln-find-overlay-specifying 'print-ln))
-           (data (println-get-data))
-           (line-number (line-number-at-pos))
-           (point (point))
-           (cc (current-column))
-           (before (progn (save-excursion
-                            (re-search-backward (concat current-item "\\([[:space:]]*\\):") (line-beginning-position)))
-                          (match-string-no-properties 1))))
-      (message "[println-modify] BEFORE1 current-column: %s" (current-column))
-      (println-data-update-item print-ln-overlay current-item modified-item)
-      (println-refresh data)
-      (message "[println-modify] BEFORE2 current-column: %s %s" (current-column) (- end start pre-change-len))
-      ;;(goto-char (point-min))
-      ;;(forward-line line-number)
-
-      (cond ((= pre-change-len 0)
-             (goto-char (+ (line-beginning-position (1+ (- line-number (line-number-at-pos) ))) cc (- end start pre-change-len)))
-             (save-excursion
-               (re-search-backward (concat modified-item "\\([[:space:]]*\\):") (line-beginning-position)))
-             (unless (and
-                      (s-blank? (match-string-no-properties 1))
-                      (s-blank? before))
-               (backward-char 1)))
-            ((> pre-change-len 0)
-             (goto-char (+ (line-beginning-position (1+ (- line-number (line-number-at-pos) ))) cc (- end start pre-change-len)))
-             (save-excursion
-               (re-search-backward (concat modified-item "\\([[:space:]]*\\):") (line-beginning-position)))
-             (unless (s-blank? (match-string-no-properties 1))
-               (forward-char 1))))
-
-
-      ;; )
-      ;; (goto-char (+ point (- end start pre-change-len)))
-      ;; (when (println-align-p data)
-      ;;   (let ((point (point)))
-      ;;     (save-excursion (re-search-backward (concat modified-item "\\([[:space:]]*\\):") (line-beginning-position)))
-      ;;     (message "[println-modify] (match-beginning 1): %s %s blank? %s current-column %s" (match-beginning 1) (match-end 1) (s-blank? (match-string-no-properties 1))  (current-column))
-      ;;     (if (s-blank? (match-string-no-properties 1))
-      ;;         (forward-char 1)
-      ;;       (backward-char 1))))
-      ;; (message "[println-modify] AFTER   current-column: %s" (current-column))
-      )))
-
-(defun abc (str)
-  (message "[a] abc: %s" abc)
-
-  ;;         1234567890123456789012345678901234567890
-  (let ((point (point)))
-    (re-search-backward (concat str "\\([[:space:]]*\\):") (line-beginning-position))
-    (goto-char point)
-    (if (s-blank? (match-string-no-properties 1))
-        (forward-char 1)
-      (backward-char 1))))
-
-(defun println-insert-behind (overlay after start end &optional pre-change-len)
-
-  (when (and after (not undo-in-progress) (not println-inhibit-modification-hooks))
-
-    (message "[BEHIND] star t %s end %s undo-in-progress %s" start end undo-in-progress)
-    (println-modify overlay after start end pre-change-len)))
 
 (defun println-editable (item)
   (propertize item :print-ln-current item))
@@ -736,7 +616,6 @@
   (puthash major-mode identifier println-identifier-founder)
   (puthash major-mode stamp println-stamp-renderer)
   (puthash major-mode foreach println-foreach-renderer))
-
 
 (defun print-ln-print (num prompt)
   (let ((on-empty-line (string-blank-p (thing-at-point 'line t))))

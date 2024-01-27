@@ -23,14 +23,24 @@
   (with-eval-after-load 'scala-mode
     (require 'println-debugger-scala)))
 
+(if (featurep 'scala-ts-mode)
+    (require 'println-debugger-scala)
+  (with-eval-after-load 'scala-ts-mode
+    (require 'println-debugger-scala)))
+
 (if (featurep 'js)
     (require 'println-debugger-javascript)
   (with-eval-after-load 'js
     (require 'println-debugger-javascript)))
 
-(if (featurep 'gdscript-mode)
-    (require 'println-debugger-gdscript)
-  (with-eval-after-load 'gdscript-mode
-    (require 'println-debugger-gdscript)))
+(if (featurep 'typescript-ts-mode)
+    (require 'println-debugger-javascript)
+  (with-eval-after-load 'typescript-ts-mode
+    (require 'println-debugger-javascript)))
+
+(if (featurep 'rust-ts-mode)
+    (require 'println-debugger-rust)
+  (with-eval-after-load 'rust-ts-mode
+    (require 'println-debugger-rust)))
 
 (provide 'println-debugger)

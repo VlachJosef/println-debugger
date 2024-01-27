@@ -14,19 +14,7 @@
 (require 's)
 (eval-when-compile (require 'subr-x))
 
-;;;(defvar println-scala "println(\"%s: \" + (%s))")
-;;(defvar println-emacs-lisp "(message \"%s: %%s\" %s)")
-(defvar println-javascript "console.log('%s', %s);")
-(defvar println-haskell "putTextLn $ \"%s \" <> show %s")
-(defvar println-gdscript "print(\"%s \", str(%s))")
-;;(defvar println-gdscript "gui.print_scalar(\"%s \", str(%s))")
-
-;;(current-kill 3)
-
-;;((read-char-choice "HI:" '(?a ?b ?c)))
-
 ;;(insert (propertize "Red Text" 'font-lock-face '(:foreground "red")))
-
 
 (defface print-ln-diff-hunk-heading
   '((((class color) (background dark))
@@ -84,7 +72,7 @@
 (defun println-demo-data ()
   (let* ((kill-ring '("hi" "there"))
          (identifier "Demo.init")
-         (flags (print-ln-flags-create :multiline t :align t :show-identifier t))
+         (flags (print-ln-flags-create :multiline t :align t :show-identifier nil))
          (data (println-cluster-data-create :items nil :identifier identifier :flags flags :indentation nil)))
     (dotimes (item (length kill-ring))
       (let ((current (nth item kill-ring)))
@@ -92,6 +80,7 @@
     data))
 
 (defun println-demo ()
+  (interactive)
   (forward-line)
   (print-ln-render (println-demo-data)))
 
@@ -130,13 +119,13 @@
             (overlay-put overlay 'print-ln data)
             (overlay-put overlay 'keymap print-ln-keymap)))))))
 
-
-
 (cl-defstruct (println-preferences
                (:constructor println-preferences-create)
                (:copier nil)
                (:conc-name println-preferences->))
-  mode ;; can be either :item or :stamp
+  ;; can be either :item or :stamp
+  mode
+  ;; local preferenes for cluster of println statements
   flags)
 
 (cl-defstruct (println-stamp-data
@@ -181,7 +170,6 @@
                (:conc-name println-cluster-data->))
   items identifier flags indentation)
 
-
 (cl-defstruct (print-ln-flags
                (:constructor print-ln-flags-create)
                (:copier nil)
@@ -191,13 +179,14 @@
 (defconst println-default-flags
   (print-ln-flags-create
    :multiline t
-   :align nil))
+   :align nil
+   :show-identifier nil))
 
 (defvar println-global-preferences
   (println-preferences-create
    :mode :item
-   :flags println-default-flags))
-
+   :flags println-default-flags)
+  "Preferences to use when new cluster of print statements is created.")
 
 ;; (defun println-table-update-identifier (data identifier)
 ;;   (setf (println-cluster-data->identifier data)
@@ -324,29 +313,24 @@
   (let ((data (println-get-data)))
     (println-table-remove-row data)))
 
-
 (defun print-ln-stamp (prefix)
   (interactive "p")
 
-  (let* ((data (println-get-data))
-         (line (thing-at-point 'line))
-         (item-old (get-text-property (next-single-property-change 0 'item-data line) 'item-data line))
-         (items (println-cluster-data->items data))
-         (index (seq-position items item-old))
-         (item-new (cond ((println-item-data-p item-old)
-                          (setf (println-preferences->mode println-global-preferences) :stamp)
-                          (println-stamp-data-create :order (setq println-counter (1+ println-counter))))
-                         ((println-stamp-data-p item-old)
-                          (setf (println-preferences->mode println-global-preferences) :item)
-                          (println-item-data-create :item (println-next-kill data))))))
-    (if (numberp index)
-        (setf (nth index items) item-new)
-      (error "Index of element '%s' not found" item-old))
-
-    (let ((point (line-beginning-position)))
-      (println-refresh data)
-      (goto-char point)
-      (goto-char (line-end-position)))))
+  (println-modify-and-refresh-cluster data
+    (if (println-singleline-p data)
+        (print-ln-toggle-multiline data)
+      (let* ((item-old (println-get-line-data))
+             (items (println-cluster-data->items data))
+             (index (seq-position items item-old))
+             (item-new (cond ((println-item-data-p item-old)
+                              (setf (println-preferences->mode println-global-preferences) :stamp)
+                              (println-stamp-data-create :order (setq println-counter (1+ println-counter))))
+                             ((println-stamp-data-p item-old)
+                              (setf (println-preferences->mode println-global-preferences) :item)
+                              (println-item-data-create :item (println-next-kill data))))))
+        (if (numberp index)
+            (setf (nth index items) item-new)
+          (error "Index of element '%s' not found" item-old))))))
 
 (defun print-ln-reset ()
   (interactive)
@@ -616,38 +600,5 @@
   (puthash major-mode identifier println-identifier-founder)
   (puthash major-mode stamp println-stamp-renderer)
   (puthash major-mode foreach println-foreach-renderer))
-
-(defun print-ln-print (num prompt)
-  (let ((on-empty-line (string-blank-p (thing-at-point 'line t))))
-    (when (> num 0)
-      (when (equal num 1)
-        (unless on-empty-line
-          (beginning-of-line)
-          (indent-according-to-mode)
-          (kill-line)))
-
-      (when (and (> num 1) (not on-empty-line))
-        (move-beginning-of-line nil)
-        (insert "\n")
-        (previous-line))
-
-      (dotimes (number num)
-        (let* ((index (- num number 1))
-               (latest-kill (current-kill index t))
-               (latest-kill-unquoted (s-replace "\"" " " latest-kill)))
-          (indent-according-to-mode)
-          (insert (format prompt latest-kill-unquoted latest-kill))
-          (move-end-of-line nil)
-          (unless (equal index 0)
-            (insert "\n")))))))
-
-(defun print-ln (arg)
-  (interactive "p")
-  (pcase major-mode
-    (`emacs-lisp-mode (println-insert-after arg))
-    (`js-mode (print-ln-print arg println-javascript))
-    (`scala-mode (println-insert-after arg))
-    (`haskell-mode (print-ln-print arg println-haskell))
-    (`gdscript-mode (print-ln-print arg println-gdscript))))
 
 (provide 'println-debugger-common)

@@ -340,8 +340,19 @@
 (defun print-ln-reverse ()
   (interactive)
   (println-modify-and-refresh-cluster data
-    (setf (println-cluster-data->items data)
-          (reverse (println-cluster-data->items data)))))
+    (progn
+      (let* ((items (println-cluster-data->items data))
+             (items-with-index (seq-map-indexed (lambda (elt idx)
+                                 (list idx elt))
+                               items))
+             (indexed-stamps-only (seq-filter  (lambda (s) (println-stamp-data-p (cadr s))) items-with-index))
+             (items-only (seq-filter  #'println-item-data-p items))
+             (reversed (reverse items-only)))
+        (dolist (element indexed-stamps-only)
+          (let ((stamp-index (car element))
+                (stamp (cadr element)))
+             (push stamp (nthcdr stamp-index reversed))))
+        (setf (println-cluster-data->items data) reversed)))))
 
 (defun println-exclude-current ()
   (interactive)

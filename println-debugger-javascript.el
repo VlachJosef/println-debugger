@@ -18,16 +18,16 @@
 
 (defun println-javascript-to-string (item identifier)
   (concat "console.log(\"" (println-identifier identifier) (println-safe-string item) ": \", "
-          (println-editable item) ");"))
+          item ");"))
 
 (defun println-javascript-literal-string (item)
-  (format "console.log(\"%s\");" (println-editable item)))
+  (format "console.log(\"%s\");" item))
 
 (defun println-javascript-value (item)
-  (format "console.log(%s);" (println-editable item)))
+  (format "console.log(%s);" item))
 
 (defun println-javascript-to-string-aligned (item longest identifier)
-  (concat "console.log(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\", " (println-editable item) ");"))
+  (concat "console.log(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\", " item ");"))
 
 (defun println-javascript-to-single-line-string (item)
   (concat "\", " (println-safe-string item) ": \", " item))

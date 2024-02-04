@@ -18,16 +18,16 @@
 
 (defun println-rust-to-string (item identifier)
   (concat "println!(\"" (println-identifier identifier) (println-safe-string item) ": {:?}\", "
-          (println-editable item) ");"))
+          item ");"))
 
 (defun println-rust-literal-string (item)
-  (format "println!(\"%s\");" (println-editable item)))
+  (format "println!(\"%s\");" item))
 
 (defun println-rust-value (item)
-  (format "println!(\"{:?}\", %s);" (println-editable item)))
+  (format "println!(\"{:?}\", %s);" item))
 
 (defun println-rust-to-string-aligned (item longest identifier)
-  (concat "println!(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: {:?}") (println-safe-string item)) "\", " (println-editable item) ");"))
+  (concat "println!(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: {:?}") (println-safe-string item)) "\", " item ");"))
 
 (defun println-rust-render-single-line (items identifier)
   (concat "println!(\""

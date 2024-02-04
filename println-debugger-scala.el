@@ -36,17 +36,16 @@
   )
 
 (defun println-scala-to-string (item identifier)
-  (concat "println(\"" (println-identifier identifier) (println-safe-string item) ": \" + "
-          (println-editable item) ")"))
+  (concat "println(\"" (println-identifier identifier) (println-safe-string item) ": \" + " item ")"))
 
 (defun println-scala-literal-string (item)
-  (format "println(\"%s\")" (println-editable item)))
+  (format "println(\"%s\")" item))
 
 (defun println-scala-value (item)
-  (format "println(%s)" (println-editable item)))
+  (format "println(%s)" item))
 
 (defun println-scala-to-string-aligned (item longest identifier)
-  (concat "println(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\" + " (println-editable item) ")"))
+  (concat "println(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\" + " item ")"))
 
 (defun println-scala-render-single-line (items identifier)
   (concat "println(\"" (println-identifier identifier) (s-chop-prefix "\", " (mapconcat #'println-scala-to-single-line-string items " + ")) ")"))

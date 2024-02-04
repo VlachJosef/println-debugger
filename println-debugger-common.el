@@ -16,19 +16,12 @@
 
 ;;(insert (propertize "Red Text" 'font-lock-face '(:foreground "red")))
 
-(defface print-ln-diff-hunk-heading
+(defface println-diff-hunk-heading
   '((((class color) (background dark))
      :extend t
      :background "DarkSlateBlue"))
-  "Face for lines controlled by print-ln."
-  :group 'print-ln-faces)
-
-;; (defface print-ln-diff-hunk-heading-2
-;;   '((((class color) (background dark))
-;;      :extend t
-;;      :background "black"))
-;;   "Face for print-ln generated lines."
-;;   :group 'print-ln-faces)
+  "Face for lines controlled by println."
+  :group 'println-faces)
 
 (defvar println-basic-renderer (make-hash-table))
 (defvar println-basic-value-renderer (make-hash-table))
@@ -41,26 +34,6 @@
 
 (defvar println-counter 0)
 
-;; (define-minor-mode print-ln-mode
-;;   "Highlight nested parentheses, brackets, and braces according to their depth."
-;;   nil
-;;   " println"
-;;   nil
-;;   ;;(font-lock-remove-keywords nil print-ln--font-lock-keywords)
-;;   (when print-ln-mode
-;;     ))
-
-;; (defun print-ln-overlay-modified (overlay before-after beginning end &optional length)
-;;   (message "overlay: %s" overlay)
-;;   (message "before-after: %s" before-after)
-;;   (message "beginning: %s" beginning)
-;;   (message "end: %s" end)
-;;   (message "length: %s" length)
-;;   )
-
-(add-hook 'before-revert-hook 'println-save-print-data)
-(add-hook 'after-revert-hook 'println-recover-print-data)
-
 (cl-defstruct (println-revert-info
                (:constructor println-revert-info-create)
                (:copier nil)
@@ -72,7 +45,7 @@
 (defun println-demo-data ()
   (let* ((kill-ring '("hi" "there"))
          (identifier "Demo.init")
-         (flags (print-ln-flags-create :multiline t :align t :show-identifier nil))
+         (flags (println-flags-create :multiline t :align t :show-identifier nil))
          (data (println-cluster-data-create :items nil :identifier identifier :flags flags :indentation nil)))
     (dotimes (item (length kill-ring))
       (let ((current (nth item kill-ring)))
@@ -82,42 +55,7 @@
 (defun println-demo ()
   (interactive)
   (forward-line)
-  (print-ln-render (println-demo-data)))
-
-;; (defun println-current-overlay (pos)
-;;   (setq current-overlay nil)
-;;   (let ((overlays (overlays-in pos pos)))
-;;     (dolist (overlay overlays)
-;;       (when (overlay-get overlay 'print-ln-p)
-;;         (let ((data (overlay-get overlay 'print-ln)))
-;;           (push (println-revert-info-create :data data) println-revert-data))))
-;;     (remove-overlays (point-min) (point-max) 'print-ln-p t)))
-
-(defun println-save-print-data ()
-  (setq println-revert-data nil)
-  (let ((overlays (overlays-in (point-min) (point-max))))
-    (dolist (overlay overlays)
-      (when (overlay-get overlay 'print-ln-p)
-        (let ((data (overlay-get overlay 'print-ln)))
-          (push (println-revert-info-create :data data) println-revert-data))))
-    (remove-overlays (point-min) (point-max) 'print-ln-p t)))
-
-(defun print-ln-to-regex (str)
-  (s-replace-all '(("println(" . "[[:space:]]*println(\n?[[:space:]]*")) str))
-
-(defun println-recover-print-data ()
-  (dolist (revert-info println-revert-data)
-    (let* ((data (println-revert-info->data revert-info))
-           (quoted-string (print-ln-to-regex (regexp-quote (println-render data)))))
-      (save-excursion
-        (goto-char (point-min))
-        (when-let ((res (re-search-forward quoted-string nil t)))
-          (let ((overlay (make-overlay (match-beginning 0) (1+ (match-end 0)) (current-buffer) t nil)))
-            (overlay-put overlay 'face 'print-ln-diff-hunk-heading)
-            (overlay-put overlay 'evaporate t)
-            (overlay-put overlay 'print-ln-p t)
-            (overlay-put overlay 'print-ln data)
-            (overlay-put overlay 'keymap print-ln-keymap)))))))
+  (println-write (println-demo-data)))
 
 (cl-defstruct (println-preferences
                (:constructor println-preferences-create)
@@ -125,7 +63,7 @@
                (:conc-name println-preferences->))
   ;; can be either :item or :stamp
   mode
-  ;; local preferenes for cluster of println statements
+  ;; local preferences for cluster of println statements
   flags)
 
 (cl-defstruct (println-stamp-data
@@ -170,14 +108,14 @@
                (:conc-name println-cluster-data->))
   items identifier flags indentation)
 
-(cl-defstruct (print-ln-flags
-               (:constructor print-ln-flags-create)
+(cl-defstruct (println-flags
+               (:constructor println-flags-create)
                (:copier nil)
-               (:conc-name print-ln-flags->))
+               (:conc-name println-flags->))
   multiline align show-identifier)
 
 (defconst println-default-flags
-  (print-ln-flags-create
+  (println-flags-create
    :multiline t
    :align nil
    :show-identifier nil))
@@ -203,32 +141,33 @@
 
 (defun println-table-remove-row (data)
   (let* ((items (println-cluster-data->items data)))
-    (if (equal 1 (length items))
-        (print-ln-delete-current)
+    (if (= 1 (length items))
+        (progn (println-delete-current)
+               (forward-line -1))
       (setf (println-cluster-data->items data)
             (reverse (cdr (reverse items))))
       (println-refresh data))))
 
-(defun print-ln-toggle-identifier (data)
+(defun println-toggle-identifier (data)
   (let* ((flags (println-cluster-data->flags data))
          (global (println-preferences->flags println-global-preferences))
-         (show-identifier (not (print-ln-flags->show-identifier flags))))
-    (setf (print-ln-flags->show-identifier flags) show-identifier
-          (print-ln-flags->show-identifier global) show-identifier)))
+         (show-identifier (not (println-flags->show-identifier flags))))
+    (setf (println-flags->show-identifier flags) show-identifier
+          (println-flags->show-identifier global) show-identifier)))
 
-(defun print-ln-toggle-multiline (data)
+(defun println-toggle-multiline (data)
   (let* ((flags (println-cluster-data->flags data))
          (global (println-preferences->flags println-global-preferences))
-         (multiline (not (print-ln-flags->multiline flags))))
-    (setf (print-ln-flags->multiline flags) multiline
-          (print-ln-flags->multiline global) multiline)))
+         (multiline (not (println-flags->multiline flags))))
+    (setf (println-flags->multiline flags) multiline
+          (println-flags->multiline global) multiline)))
 
-(defun print-ln-toggle-align (data)
+(defun println-toggle-align (data)
   (let* ((flags (println-cluster-data->flags data))
          (global (println-preferences->flags println-global-preferences))
-         (align (not (print-ln-flags->align flags))))
-    (setf (print-ln-flags->align flags) align
-          (print-ln-flags->align global) align)))
+         (align (not (println-flags->align flags))))
+    (setf (println-flags->align flags) align
+          (println-flags->align global) align)))
 
 (defun println-get-data ()
   (get-char-property (point) 'print-ln))
@@ -260,21 +199,21 @@
     (let ((line (thing-at-point 'line)))
       (get-text-property (next-single-property-change 0 'item-data line) 'item-data line))))
 
-(defun print-ln-align ()
+(defun println-align ()
   (interactive)
   (println-modify-and-refresh-cluster data
-    (print-ln-toggle-align data)))
+    (println-toggle-align data)))
 
-(defun print-ln-multiline ()
+(defun println-multiline ()
   (interactive)
   (let ((data (println-get-data)))
-    (print-ln-toggle-multiline data)
+    (println-toggle-multiline data)
     (println-refresh data)))
 
-(defun print-ln-identifier ()
+(defun println-show-identifier ()
   (interactive)
   (println-modify-and-refresh-cluster data
-    (print-ln-toggle-identifier data)))
+    (println-toggle-identifier data)))
 
 (defun println-next-kill (data)
   (let ((items (seq-map #'println-item-data->item
@@ -285,12 +224,12 @@
                 (not (member kill-item items)))
               kill-items)))
 
-(defun print-ln-increase ()
+(defun println-increase ()
   (interactive)
   (let* ((data (println-get-data))
          (next-kill (println-next-kill data)))
     (if (not next-kill)
-        (message "No more elements in kill-ring.")
+        (message "No more elements in kill-ring")
       (println-data-add-item data next-kill)
       (println-refresh data))))
 
@@ -308,17 +247,17 @@
           (setq result (cons element result)))))
     (reverse result)))
 
-(defun print-ln-decrease ()
+(defun println-decrease ()
   (interactive)
   (let ((data (println-get-data)))
     (println-table-remove-row data)))
 
-(defun print-ln-stamp (prefix)
+(defun println-stamp (prefix)
   (interactive "p")
 
   (println-modify-and-refresh-cluster data
     (if (println-singleline-p data)
-        (print-ln-toggle-multiline data)
+        (println-toggle-multiline data)
       (let* ((item-old (println-get-line-data))
              (items (println-cluster-data->items data))
              (index (seq-position items item-old))
@@ -332,12 +271,12 @@
             (setf (nth index items) item-new)
           (error "Index of element '%s' not found" item-old))))))
 
-(defun print-ln-reset ()
+(defun println-reset ()
   (interactive)
   (setq println-counter 0)
-  (message "Println counter reset."))
+  (message "Println counter reset"))
 
-(defun print-ln-reverse ()
+(defun println-reverse ()
   (interactive)
   (println-modify-and-refresh-cluster data
     (progn
@@ -360,13 +299,13 @@
          (items (println-cluster-data->items data)))
     (message "[println-exclude-current] items: %s" items)))
 
-(defun print-ln-literal/identifier ()
+(defun println-literal/identifier ()
   (interactive)
   (println-modify-and-refresh-cluster data
     (if (println-singleline-p data)
-        (print-ln-toggle-multiline data)
+        (println-toggle-multiline data)
       (if (println-align-p data)
-          (print-ln-toggle-align data)
+          (println-toggle-align data)
         (let* ((line-data (println-get-line-data))
                (type (println-item-data->type line-data)))
           (let ((next-type
@@ -377,15 +316,15 @@
                    (_ :rich))))
             (setf (println-item-type->type type) next-type)))))))
 
-(defun print-ln-foreach ()
+(defun println-foreach ()
   (interactive)
   (println-modify-and-refresh-cluster data
     (if (println-stamp-data-p (println-get-line-data))
         (message "Can't apply foreach on stamp data")
       (if (println-singleline-p data)
-          (print-ln-toggle-multiline data)
+          (println-toggle-multiline data)
         (when (println-align-p data)
-          (print-ln-toggle-align data))
+          (println-toggle-align data))
         (let* ((line-data (println-get-line-data))
                (type (println-item-data->type line-data)))
           (let ((next-type
@@ -395,64 +334,64 @@
                    (_ :foreach))))
             (setf (println-item-type->type type) next-type)))))))
 
-(defvar print-ln-keymap
+(defvar println-keymap
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-c") 'print-ln-commit)
-    (define-key map (kbd "RET") 'print-ln-newline)
-    (define-key map (kbd "C-c _") 'print-ln-scala-for-comprehension)
-    (define-key map (kbd "C-M-r") 'print-ln-reverse)
+    (define-key map (kbd "C-c C-c") 'println-commit)
+    (define-key map (kbd "RET") 'println-newline)
+    (define-key map (kbd "C-c _") 'println-scala-for-comprehension)
+    (define-key map (kbd "C-M-r") 'println-reverse)
     ;;(define-key map (kbd "C-M-k") 'println-exclude-current)
-    (define-key map (kbd "C-M-i") 'print-ln-reset)
-    (define-key map (kbd "C-M-o") 'print-ln-stamp)
-    (define-key map (kbd "C-M-s") 'print-ln-identifier)
-    (define-key map (kbd "C-M-m") 'print-ln-multiline)
-    (define-key map (kbd "C-M-a") 'print-ln-align)
-    (define-key map (kbd "C-M-p") 'print-ln-decrease)
-    (define-key map (kbd "C-M-n") 'print-ln-increase)
-    (define-key map (kbd "C-M-d") 'print-ln-delete-at-point)
-    (define-key map (kbd "C-M-x") 'print-ln-literal/identifier)
-    (define-key map (kbd "C-M-c") 'print-ln-foreach)
+    (define-key map (kbd "C-M-i") 'println-reset)
+    (define-key map (kbd "C-M-o") 'println-stamp)
+    (define-key map (kbd "C-M-s") 'println-show-identifier)
+    (define-key map (kbd "C-M-m") 'println-multiline)
+    (define-key map (kbd "C-M-a") 'println-align)
+    (define-key map (kbd "C-M-p") 'println-decrease)
+    (define-key map (kbd "C-M-n") 'println-increase)
+    (define-key map (kbd "C-M-d") 'println-delete-at-point)
+    (define-key map (kbd "C-M-x") 'println-literal/identifier)
+    (define-key map (kbd "C-M-c") 'println-foreach)
     map)
-  "Keymap for print-ln managed region.")
+  "Keymap for println managed region.")
 
-(defun print-ln-newline ()
+(defun println-newline ()
   (interactive)
-  (when-let ((overlay (print-ln-find-overlay-specifying 'print-ln)))
+  (when-let ((overlay (println-find-overlay-specifying 'print-ln)))
     (if (not (= 1 (- (overlay-end overlay) (point))))
         (let ((original-binding (key-binding (kbd "RET") nil nil (point-min))))
           ;; Call whatever was originally bind by "RET" key.
-          (unless (eq original-binding 'print-ln-newline)
+          (unless (eq original-binding 'println-newline)
             (funcall original-binding)))
       (goto-char (overlay-end overlay))
       (insert "\n")
       (forward-line -1)
       (indent-according-to-mode))))
 
-(defun print-ln-scala-for-comprehension ()
+(defun println-scala-for-comprehension ()
   (interactive)
-  (message "[print-ln-scala-for-comprehension] TODO"))
+  (message "[println-scala-for-comprehension] TODO"))
 
-(defun print-ln-commit ()
+(defun println-commit ()
   (interactive)
   (let* ((data (println-get-data))
          (str (println-render data))
          (indentation (println-cluster-data->indentation data))
          (content (concat indentation str "\n"))
          (point (point)))
-    (print-ln-delete-current)
+    (println-delete-current)
     (insert content)
     (goto-char point)))
 
-(defun print-ln-delete-at-point ()
+(defun println-delete-at-point ()
   (interactive)
-  (print-ln-delete-current))
+  (println-delete-current))
 
-(defun print-ln-find-overlay-specifying (prop)
+(defun println-find-overlay-specifying (prop)
   (let ((overlays (overlays-at (point))))
     (seq-find (lambda (overlay) (overlay-get overlay prop)) overlays)))
 
-(defun print-ln-delete-current ()
-  (when-let ((overlay (print-ln-find-overlay-specifying 'print-ln)))
+(defun println-delete-current ()
+  (when-let ((overlay (println-find-overlay-specifying 'print-ln)))
     (delete-region (overlay-start overlay) (overlay-end overlay))))
 
 (defun println-safe-string (str) (s-replace "\"" "" str))
@@ -504,16 +443,16 @@
     (funcall single-line-renderer (mapcar #'println-item-data->item (seq-filter #'println-item-data-p items)) identifier)))
 
 (defun println-multiline-p (data)
-  (print-ln-flags->multiline (println-cluster-data->flags data)))
+  (println-flags->multiline (println-cluster-data->flags data)))
 
 (defun println-singleline-p (data)
   (not (println-multiline-p data)))
 
 (defun println-align-p (data)
-  (print-ln-flags->align (println-cluster-data->flags data)))
+  (println-flags->align (println-cluster-data->flags data)))
 
 (defun println-show-identifier-p (data)
-  (print-ln-flags->show-identifier (println-cluster-data->flags data)))
+  (println-flags->show-identifier (println-cluster-data->flags data)))
 
 (defun println-render (data)
   (let ((items (println-cluster-data->items data))
@@ -542,22 +481,24 @@
       (s-pad-left (current-indentation) " " " "))))
 
 (defun println-standard (prefix)
-  (when (println-get-data)
-    (print-ln-delete-current))
-  (let* ((kill-ring (println-preprocess-kill-ring))
-         (identifier (println-search-identifier))
-         (flags (println-preferences->flags println-global-preferences))
-         (indentation (println-indentation))
-         (data (println-cluster-data-create :items nil :identifier identifier :flags flags :indentation indentation)))
-    (dotimes (item (min prefix (length kill-ring)))
-      (let ((current (nth item kill-ring)))
-        (println-data-add-item data current)))
-    (forward-line)
-    (print-ln-render data)))
+  (if (null kill-ring)
+      (message "Nothing to print, kill-ring is empty")
+    (when (println-get-data)
+      (println-delete-current))
+    (let* ((kill-ring (println-preprocess-kill-ring))
+           (identifier (println-search-identifier))
+           (flags (println-preferences->flags println-global-preferences))
+           (indentation (println-indentation))
+           (data (println-cluster-data-create :items nil :identifier identifier :flags flags :indentation indentation)))
+      (dotimes (item (min prefix (length kill-ring)))
+        (let ((current (nth item kill-ring)))
+          (println-data-add-item data current)))
+      (forward-line)
+      (println-write data))))
 
-(defun print-ln-add-stamp ()
+(defun println-add-stamp ()
   (when (println-get-data)
-    (print-ln-delete-current))
+    (println-delete-current))
   (let* ((identifier (println-search-identifier))
          (flags (println-preferences->flags println-global-preferences))
          (indentation (println-indentation))
@@ -567,24 +508,24 @@
                 :flags flags
                 :indentation indentation)))
     (forward-line)
-    (print-ln-render data)))
+    (println-write data)))
 
 (defun println-insert-after (prefix)
   (interactive "p")
   (pcase (println-preferences->mode println-global-preferences)
     (:item (println-standard prefix))
-    (:stamp (print-ln-add-stamp))
+    (:stamp (println-add-stamp))
     (_ (error "Unknown mode %s" (println-preferences->mode println-global-preferences)))))
 
 (defun println-refresh (data)
-  (print-ln-delete-current)
-  (print-ln-render data))
+  (println-delete-current)
+  (println-write data))
 
-(defun print-ln-render (data)
+(defun println-write (data)
   (let ((str (println-render data)))
-    (print-ln-render-content data str)))
+    (println-render-content data str)))
 
-(defun print-ln-render-content (data content)
+(defun println-render-content (data content)
                                         ;(indent-according-to-mode)
   (let* ((indentation (println-cluster-data->indentation data))
          (content (concat indentation content "\n"))
@@ -592,15 +533,11 @@
     (beginning-of-line nil)
     (insert content)
     (let ((overlay (make-overlay start (point) (current-buffer) t nil)))
-      (overlay-put overlay 'face 'print-ln-diff-hunk-heading)
+      (overlay-put overlay 'face 'println-diff-hunk-heading)
       (overlay-put overlay 'evaporate t)
-      (overlay-put overlay 'print-ln-p t)
-      (overlay-put overlay 'keymap print-ln-keymap)
+      (overlay-put overlay 'keymap println-keymap)
       (overlay-put overlay 'print-ln data)
       (backward-char))))
-
-(defun println-editable (item)
-  (propertize item :print-ln-current item))
 
 (defun println-register-major-mode (major-mode basic literal-string value aligned single identifier stamp foreach)
   (puthash major-mode basic println-basic-renderer)

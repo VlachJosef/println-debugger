@@ -1,6 +1,6 @@
 # println-debugger
 
-Convenient function for generating println statements in Emacs Lisp, Scala, Javascript, Typescript and Rust.
+Quick generating of println expressions in Emacs Lisp, Scala, Javascript, Typescript and Rust.
 
 ```elisp
 (use-package println-debugger

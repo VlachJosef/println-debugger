@@ -1,4 +1,4 @@
-;;; println-debugger-common.el --- Convenient function for generating println statements -*- lexical-binding: t; -*-
+;;; println-debugger-common.el --- Quick generating of println expressions -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2021 Josef Vlach
 
@@ -125,10 +125,6 @@
    :mode :item
    :flags println-default-flags)
   "Preferences to use when new cluster of print statements is created.")
-
-;; (defun println-table-update-identifier (data identifier)
-;;   (setf (println-cluster-data->identifier data)
-;;         identifier))
 
 (defun println-data-add-item (data item)
   (setf (println-cluster-data->items data)
@@ -439,7 +435,6 @@
 
 (defun println-render-single-line (items identifier)
   (when-let ((single-line-renderer (gethash major-mode println-single-line-renderer)))
-    ;; TODO
     (funcall single-line-renderer (mapcar #'println-item-data->item (seq-filter #'println-item-data-p items)) identifier)))
 
 (defun println-multiline-p (data)
@@ -463,9 +458,11 @@
             (let* ((abc (seq-map (lambda (item) (string-width (or (println-item-data->item item) ""))) (seq-filter #'println-item-data-p items)))
                    (longest (if abc (seq-max abc) "")))
               (mapconcat (lambda (item)
-                           (println-to-string-aligned item longest identifier)) items (concat "\n" indentation)))
+                           (println-to-string-aligned item longest identifier))
+                         items (concat "\n" indentation)))
           (mapconcat (lambda (item)
-                       (println-to-string item identifier indentation)) items (concat "\n" indentation)))
+                       (println-to-string item identifier indentation))
+                     items (concat "\n" indentation)))
       (println-render-single-line items identifier))))
 
 (defun println-search-identifier ()

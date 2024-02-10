@@ -43,13 +43,12 @@
 (defun println-rust-stamp (order)
   (format "println!(\"HeRe %s%s%s\");" order order order))
 
-;; FIXME this is not valid rust code
 (defun println-rust-foreach (item type)
   (pcase type
     (:foreach
-     (format "%s.foreach(println)" item))
+     (format "for item in %s.iter() {\n    println!(\"{:?}\", item);\n}" item))
     (:foreach-delimited
-     (format "println!(\"%s START\");\n%s.foreach(println)\nprintln!(\"%s END\");" item item item))))
+     (format "println!(\"%s START\");\nfor item in %s.iter() {\n    println!(\"{:?}\", item);\n}\nprintln!(\"%s END\");" item item item))))
 
 
 (println-register-major-mode 'rust-ts-mode

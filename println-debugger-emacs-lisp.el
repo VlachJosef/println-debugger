@@ -45,7 +45,11 @@
   (format "(message \"HerE %s%s%s\")" order order order))
 
 (defun println-emacs-lisp-foreach (item type)
-  (format "(message \"FOREACH\")"))
+  (pcase type
+    (:foreach
+     (format "(dolist (element %s) (message \"\%%s\" element))" item))
+    (:foreach-delimited
+     (format "(message \"%s START\")\n(dolist (element %s) (message \"\%%s\" element))\n(message \"%s END\")" item item item))))
 
 (println-register-major-mode 'emacs-lisp-mode
                              #'println-emacs-lisp-to-string

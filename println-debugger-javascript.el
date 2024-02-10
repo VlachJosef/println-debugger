@@ -42,7 +42,11 @@
   (format "console.log(\"HeRe %s%s%s\");" order order order))
 
 (defun println-javascript-foreach (item type)
-  (format "console.log(\"FOREACH\");"))
+  (pcase type
+    (:foreach
+     (format "%s.forEach((item) => console.log(item));" item))
+    (:foreach-delimited
+     (format "console.log(\"%s START\");\n%s.forEach((item) => console.log(item));\nconsole.log(\"%s END\");" item item item))))
 
 (println-register-major-mode 'js-mode
                              #'println-javascript-to-string

@@ -92,3 +92,139 @@ object Handler {
   println("HeRe 111")|
 }
 =-=-=
+
+Name: scala - print stamp followed by one item
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-insert-after 1)
+    (funcall-interactively 'println-stamp)
+    (funcall-interactively 'println-increase))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("HeRe 111")
+  println("lorem: " + lorem)|
+}
+=-=-=
+
+
+Name: scala - print stamp followed by three items
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-insert-after 1)
+    (funcall-interactively 'println-stamp)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-increase))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("HeRe 111")
+  println("foo: " + foo)
+  println("pipa: " + pipa)
+  println("lorem: " + lorem)|
+}
+=-=-=
+
+Name: scala - print stamp followed by three items and reverse
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-insert-after 1)
+    (funcall-interactively 'println-stamp)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-reverse))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("HeRe 111")
+  println("lorem: " + lorem)
+  println("pipa: " + pipa)
+  println("foo: " + foo)|
+}
+=-=-=
+
+Name: scala - print stamp followed by three items and align
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-insert-after 1)
+    (funcall-interactively 'println-stamp)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-align))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("HeRe 111")
+  println("foo  : " + foo)
+  println("pipa : " + pipa)
+  println("lorem: " + lorem)|
+}
+=-=-=
+
+Name: scala - print stamp followed by three items and multiline
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-insert-after 3)
+    (funcall-interactively 'println-multiline))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("foo: " + foo + ", pipa: " + pipa + ", lorem: " + lorem)|
+}
+=-=-=
+
+Name: scala - print stamp followed by three items and multiline
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-insert-after 3)
+    (funcall-interactively 'println-multiline)
+    (funcall-interactively 'println-reverse))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("lorem: " + lorem + ", pipa: " + pipa + ", foo: " + foo)|
+}
+=-=-=

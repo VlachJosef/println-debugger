@@ -14,8 +14,6 @@
 (require 's)
 (eval-when-compile (require 'subr-x))
 
-;;(insert (propertize "Red Text" 'font-lock-face '(:foreground "red")))
-
 (defface println-diff-hunk-heading
   '((((class color) (background dark))
      :extend t
@@ -37,21 +35,6 @@
                (:copier nil)
                (:conc-name println-revert-info->))
   data)
-
-(defun println-demo-data ()
-  (let* ((kill-ring '("hi" "there"))
-         (identifier "Demo.init")
-         (flags (println-flags-create :multiline t :align t :show-identifier nil))
-         (data (println-cluster-data-create :items nil :identifier identifier :flags flags :indentation nil)))
-    (dotimes (item (length kill-ring))
-      (let ((current (nth item kill-ring)))
-        (println-data-add-item data current)))
-    data))
-
-(defun println-demo ()
-  (interactive)
-  (forward-line)
-  (println-write (println-demo-data)))
 
 (cl-defstruct (println-preferences
                (:constructor println-preferences-create)
@@ -79,26 +62,12 @@
                (:conc-name println-item-type->))
   (type :rich :read-only nil :documentation "One of :rich :plain :string-literal"))
 
-;; (println-item-type-rich)
-;; (println-item-type-plain)
-;; (println-item-type-string)
-;; (cl-struct-slot-info 'println-item-type)
-
 (cl-defstruct (println-item-data
                (:constructor println-item-data-create)
                (:copier nil)
                (:conc-name println-item-data->))
   item
   (type (println-item-type-rich)))
-
-;; (println-item-data-create :item "abc")
-;;
-;; (let ((stamp (println-stamp-data-create :order 1))
-;;       (item (println-item-data-create :item "POKLOP")))
-;;   (cond ((println-item-data-p item)
-;;          (message "HERE"))
-;;         (t (message "NOPE %s" item)))
-;;  )
 
 (cl-defstruct (println-cluster-data
                (:constructor println-cluster-data-create)
@@ -291,12 +260,6 @@
             (push stamp (nthcdr stamp-index reversed))))
         (setf (println-cluster-data->items data) reversed)))))
 
-(defun println-exclude-current ()
-  (interactive)
-  (let* ((data (println-get-data))
-         (items (println-cluster-data->items data)))
-    (message "[println-exclude-current] items: %s" items)))
-
 (defun println-literal/identifier ()
   (interactive)
   (println-modify-and-refresh-cluster data
@@ -336,9 +299,7 @@
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'println-commit)
     (define-key map (kbd "RET") 'println-newline)
-    (define-key map (kbd "C-c _") 'println-scala-for-comprehension)
     (define-key map (kbd "C-M-r") 'println-reverse)
-    ;;(define-key map (kbd "C-M-k") 'println-exclude-current)
     (define-key map (kbd "C-M-i") 'println-reset)
     (define-key map (kbd "C-M-o") 'println-stamp)
     (define-key map (kbd "C-M-s") 'println-show-identifier)
@@ -364,10 +325,6 @@
       (insert "\n")
       (forward-line -1)
       (indent-according-to-mode))))
-
-(defun println-scala-for-comprehension ()
-  (interactive)
-  (message "[println-scala-for-comprehension] TODO"))
 
 (defun println-commit ()
   (interactive)
@@ -530,7 +487,6 @@
     (println-render-content data str)))
 
 (defun println-render-content (data content)
-                                        ;(indent-according-to-mode)
   (let* ((indentation (println-cluster-data->indentation data))
          (content (concat indentation content "\n"))
          (start (line-beginning-position)))

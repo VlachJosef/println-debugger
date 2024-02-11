@@ -7,6 +7,7 @@
 (require 'println-debugger)
 
 (defun println-preferences-default ()
+  (setf (println-preferences->counter println-global-preferences) 0)
   (setf (println-preferences->mode println-global-preferences) :item)
   (setf (println-preferences->flags println-global-preferences) (println-flags-create
                                                                  :multiline t

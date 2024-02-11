@@ -32,15 +32,11 @@
 (defvar println-stamp-renderer (make-hash-table))
 (defvar println-foreach-renderer (make-hash-table))
 
-(defvar println-counter 0)
-
 (cl-defstruct (println-revert-info
                (:constructor println-revert-info-create)
                (:copier nil)
                (:conc-name println-revert-info->))
   data)
-
-(defvar println-revert-data)
 
 (defun println-demo-data ()
   (let* ((kill-ring '("hi" "there"))
@@ -61,6 +57,8 @@
                (:constructor println-preferences-create)
                (:copier nil)
                (:conc-name println-preferences->))
+  ;; number used by the :stamp mode
+  counter
   ;; can be either :item or :stamp
   mode
   ;; local preferences for cluster of println statements
@@ -123,6 +121,7 @@
 
 (defvar println-global-preferences
   (println-preferences-create
+   :counter 0
    :mode :item
    :flags println-global-flags)
   "Preferences to use when creating new cluster of print statements.")
@@ -249,8 +248,8 @@
   (let ((data (println-get-data)))
     (println-table-remove-row data)))
 
-(defun println-stamp (prefix)
-  (interactive "p")
+(defun println-stamp ()
+  (interactive)
 
   (println-modify-and-refresh-cluster data
     (if (println-singleline-p data)
@@ -260,7 +259,9 @@
              (index (seq-position items item-old))
              (item-new (cond ((println-item-data-p item-old)
                               (setf (println-preferences->mode println-global-preferences) :stamp)
-                              (println-stamp-data-create :order (setq println-counter (1+ println-counter))))
+                              (println-stamp-data-create :order
+                                                         (setf (println-preferences->counter println-global-preferences)
+                                                               (1+ (println-preferences->counter println-global-preferences)))))
                              ((println-stamp-data-p item-old)
                               (setf (println-preferences->mode println-global-preferences) :item)
                               (println-item-data-create :item (println-next-kill data))))))
@@ -270,8 +271,8 @@
 
 (defun println-reset ()
   (interactive)
-  (setq println-counter 0)
-  (message "Println counter reset"))
+  (setf (println-preferences->counter println-global-preferences) 0)
+  (message "println counter reset to 1"))
 
 (defun println-reverse ()
   (interactive)
@@ -279,15 +280,15 @@
     (progn
       (let* ((items (println-cluster-data->items data))
              (items-with-index (seq-map-indexed (lambda (elt idx)
-                                 (list idx elt))
-                               items))
+                                                  (list idx elt))
+                                                items))
              (indexed-stamps-only (seq-filter  (lambda (s) (println-stamp-data-p (cadr s))) items-with-index))
              (items-only (seq-filter  #'println-item-data-p items))
              (reversed (reverse items-only)))
         (dolist (element indexed-stamps-only)
           (let ((stamp-index (car element))
                 (stamp (cadr element)))
-             (push stamp (nthcdr stamp-index reversed))))
+            (push stamp (nthcdr stamp-index reversed))))
         (setf (println-cluster-data->items data) reversed)))))
 
 (defun println-exclude-current ()
@@ -504,7 +505,9 @@
          (flags (println-preferences->flags println-global-preferences))
          (indentation (println-indentation))
          (data (println-cluster-data-create
-                :items (list (println-stamp-data-create :order (setq println-counter (1+ println-counter))))
+                :items (list (println-stamp-data-create :order
+                                                        (setf (println-preferences->counter println-global-preferences)
+                                                              (1+ (println-preferences->counter println-global-preferences)))))
                 :identifier identifier
                 :flags flags
                 :indentation indentation)))

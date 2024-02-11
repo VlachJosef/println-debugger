@@ -7,30 +7,30 @@ Code:
     (kill-new "hello")
     (funcall-interactively 'println-insert-after 1))
 =-=
-object Hello {|
+object Handler {|
 }
 =-=
-object Hello {
+object Handler {
   println("hello: " + hello)
 }
 =-=-=
 
 Name: scala - basic println - point in the middle of a line
 =-=
-object| Hello {
+object| Handler {
 }
 =-=
-object Hello {
+object Handler {
   println("hello: " + hello)
 }
 =-=-=
 
 Name: scala - basic println - point at the beginning of a line
 =-=
-|object Hello {
+|object Handler {
 }
 =-=
-object Hello {
+object Handler {
   println("hello: " + hello)|
 }
 =-=-=
@@ -45,10 +45,10 @@ Code:
     (kill-new "foo")
     (funcall-interactively 'println-insert-after 3))
 =-=
-object Hello {|
+object Handler {|
 }
 =-=
-object Hello {
+object Handler {
   println("foo: " + foo)
   println("pipa: " + pipa)
   println("lorem: " + lorem)|
@@ -58,6 +58,7 @@ object Hello {
 Name: scala - print 3 expressions and then reverse them
 Code:
   (lambda ()
+    (println-preferences-default)
     (scala-ts-mode)
     (kill-new "lorem")
     (kill-new "pipa")
@@ -65,12 +66,29 @@ Code:
     (funcall-interactively 'println-insert-after 3)
     (funcall-interactively 'println-reverse))
 =-=
-object Hello {|
+object Handler {|
 }
 =-=
-object Hello {
+object Handler {
   println("lorem: " + lorem)
   println("pipa: " + pipa)
   println("foo: " + foo)|
+}
+=-=-=
+
+Name: scala - print stamp
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-insert-after 1)
+    (funcall-interactively 'println-stamp))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("HeRe 111")|
 }
 =-=-=

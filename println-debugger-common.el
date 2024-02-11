@@ -11,7 +11,6 @@
 ;;
 ;;; Code:
 
-(require 's)
 (eval-when-compile (require 'subr-x))
 
 (defface println-diff-hunk-heading
@@ -198,14 +197,10 @@
       (println-data-add-item data next-kill)
       (println-refresh data))))
 
-(defun println-pre-process-kill-ring-element (element)
-  (s-collapse-whitespace
-   (s-trim (substring-no-properties element))))
-
 (defun println-preprocess-kill-ring ()
   (let ((result))
     (dolist (element kill-ring)
-      (let ((element (println-pre-process-kill-ring-element element)))
+      (let ((element (string-clean-whitespace element)))
         (unless (or
                  (string-blank-p element)
                  (string-match-p "[\r\n]+" element))
@@ -349,7 +344,8 @@
   (when-let ((overlay (println-find-overlay-specifying 'print-ln)))
     (delete-region (overlay-start overlay) (overlay-end overlay))))
 
-(defun println-safe-string (str) (s-replace "\"" "" str))
+(defun println-safe-string (str)
+  (replace-regexp-in-string "\"" "" str))
 
 (defun println-identifier (identifier)
   (if identifier
@@ -373,7 +369,7 @@
          (user-error "No value renderer found for %s." major-mode)))
       ((or :foreach :foreach-delimited)
        (if-let ((foreach-renderer (gethash major-mode println-foreach-renderer)))
-           (s-replace "\n"  (format "\n%s" indentation) (funcall foreach-renderer (println-item-data->item item) type))
+           (replace-regexp-in-string "\n" (format "\n%s" indentation) (funcall foreach-renderer (println-item-data->item item) type))
          (user-error "No foreach renderer found for %s." major-mode))))))
 
 (defun println-to-string (item identifier indentation)
@@ -435,8 +431,8 @@
     (newline 1)
     (indent-according-to-mode)
     (prog1 (if indent-tabs-mode
-               (s-pad-left (/ (current-indentation) tab-width) "\t" "\t")
-             (s-pad-left (current-indentation) " " " "))
+                (make-string (/ (current-indentation) tab-width) ?\t)
+             (make-string (current-indentation) ?\ ))
       (delete-region (1- (line-beginning-position)) (point)))))
 
 (defun println-standard (prefix)

@@ -1,0 +1,36 @@
+Point-Char: |
+Name: elisp - basic println - point at the end of a line
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (emacs-lisp-mode)
+    (kill-new "hello")
+    (funcall-interactively 'println-insert-after 1))
+=-=
+(defun foo (hello)|
+)
+=-=
+(defun foo (hello)
+  (message "hello: %s" hello)|
+)
+=-=-=
+
+Name: elisp - basic println - point in the middle of a line
+=-=
+(defun |foo (hello)
+)
+=-=
+(defun foo (hello)
+  (message "hello: %s" hello)|
+)
+=-=-=
+
+Name: elisp - basic println - point at the beginning of a line
+=-=
+|(defun foo (hello)
+)
+=-=
+(defun foo (hello)
+  (message "hello: %s" hello)|
+)
+=-=-=

@@ -114,17 +114,18 @@
                (:conc-name println-flags->))
   multiline align show-identifier)
 
-(defconst println-default-flags
+(defvar println-global-flags
   (println-flags-create
    :multiline t
    :align nil
-   :show-identifier nil))
+   :show-identifier nil)
+  "Flags to use when creating new cluster of print statements.")
 
 (defvar println-global-preferences
   (println-preferences-create
    :mode :item
-   :flags println-default-flags)
-  "Preferences to use when new cluster of print statements is created.")
+   :flags println-global-flags)
+  "Preferences to use when creating new cluster of print statements.")
 
 (defun println-data-add-item (data item)
   (setf (println-cluster-data->items data)
@@ -469,13 +470,16 @@
   (when-let ((identifier-founder (gethash major-mode println-identifier-founder)))
     (funcall identifier-founder)))
 
+;; Get indentations of a new line below current line
 (defun println-indentation ()
   (save-excursion
-    (forward-line)
+    (goto-char (line-end-position))
+    (newline 1)
     (indent-according-to-mode)
-    (if indent-tabs-mode
-        (s-pad-left (/ (current-indentation) tab-width) "\t" "\t")
-      (s-pad-left (current-indentation) " " " "))))
+    (prog1 (if indent-tabs-mode
+               (s-pad-left (/ (current-indentation) tab-width) "\t" "\t")
+             (s-pad-left (current-indentation) " " " "))
+      (delete-region (1- (line-beginning-position)) (point)))))
 
 (defun println-standard (prefix)
   (if (null kill-ring)

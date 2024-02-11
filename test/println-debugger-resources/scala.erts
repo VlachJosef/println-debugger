@@ -1,0 +1,76 @@
+Point-Char: |
+Name: scala - basic println - point at the end of a line
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "hello")
+    (funcall-interactively 'println-insert-after 1))
+=-=
+object Hello {|
+}
+=-=
+object Hello {
+  println("hello: " + hello)
+}
+=-=-=
+
+Name: scala - basic println - point in the middle of a line
+=-=
+object| Hello {
+}
+=-=
+object Hello {
+  println("hello: " + hello)
+}
+=-=-=
+
+Name: scala - basic println - point at the beginning of a line
+=-=
+|object Hello {
+}
+=-=
+object Hello {
+  println("hello: " + hello)|
+}
+=-=-=
+
+Name: scala - 3 println expressions
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-insert-after 3))
+=-=
+object Hello {|
+}
+=-=
+object Hello {
+  println("foo: " + foo)
+  println("pipa: " + pipa)
+  println("lorem: " + lorem)|
+}
+=-=-=
+
+Name: scala - print 3 expressions and then reverse them
+Code:
+  (lambda ()
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-insert-after 3)
+    (funcall-interactively 'println-reverse))
+=-=
+object Hello {|
+}
+=-=
+object Hello {
+  println("lorem: " + lorem)
+  println("pipa: " + pipa)
+  println("foo: " + foo)|
+}
+=-=-=

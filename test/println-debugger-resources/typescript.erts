@@ -1,0 +1,36 @@
+Point-Char: |
+Name: typescript - basic println - point at the end of a line
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (typescript-ts-mode)
+    (kill-new "hello")
+    (funcall-interactively 'println-insert-after 1))
+=-=
+const handler = (): string => {|
+}
+=-=
+const handler = (): string => {
+  console.log("hello: ", hello);|
+}
+=-=-=
+
+Name: typescript - basic println - point in the middle of a line
+=-=
+const handler| = (): string => {
+}
+=-=
+const handler = (): string => {
+  console.log("hello: ", hello);|
+}
+=-=-=
+
+Name: typescript - basic println - point at the beginning of a line
+=-=
+|const handler = (): string => {
+}
+=-=
+const handler = (): string => {
+  console.log("hello: ", hello);|
+}
+=-=-=

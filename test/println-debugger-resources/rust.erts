@@ -1,0 +1,36 @@
+Point-Char: |
+Name: rust - basic println - point at the end of a line
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (rust-ts-mode)
+    (kill-new "hello")
+    (funcall-interactively 'println-insert-after 1))
+=-=
+fn main() {|
+}
+=-=
+fn main() {
+    println!("hello: {:?}", hello);|
+}
+=-=-=
+
+Name: rust - basic println - point in the middle of a line
+=-=
+fn m|ain() {
+}
+=-=
+fn main() {
+    println!("hello: {:?}", hello);|
+}
+=-=-=
+
+Name: rust - basic println - point at the beginning of a line
+=-=
+|fn main() {
+}
+=-=
+fn main() {
+    println!("hello: {:?}", hello);|
+}
+=-=-=

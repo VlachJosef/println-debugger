@@ -21,3 +21,16 @@ println-debugger in action (outdated)
 ![println-debugger in action](images/println-debugger-in-action.gif)
 
 Useful resources for starting with tree-sitter on emacs:  https://emacsconf.org/2022/talks/treesitter/ (https://www.youtube.com/watch?v=MZPR_SC9LzE)
+
+# Development
+
+## Running tests
+
+1) Open file `println-debugger-tests.el`
+   `M-x find-file test/println-debugger-tests.el RET`
+
+2) Eval content of buffer `println-debugger-tests.el`
+   `M-x eval-buffer RET`
+
+3) Run all tests by
+   `M-x ert RET t RET`

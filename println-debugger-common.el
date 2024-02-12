@@ -41,38 +41,36 @@
                (:conc-name println-preferences->))
   ;; number used by the :stamp mode
   counter
-  ;; can be either :item or :stamp
+  ;; can be either :killed-text or :stamp
   mode
   ;; local preferences for cluster of println statements
   flags)
 
-(cl-defstruct (println-stamp-data
-               (:constructor println-stamp-data-create)
+(cl-defstruct (println-stamp
+               (:constructor println-stamp-create)
                (:copier nil)
-               (:conc-name println-stamp-data->))
+               (:conc-name println-stamp->))
   order)
 
-(cl-defstruct (println-item-type
+(cl-defstruct (println-killed-text
+               (:constructor println-killed-text-create)
                (:copier nil)
-               (:constructor nil)
-               (:constructor println-item-type-rich)
-               (:constructor println-item-type-plain (&key (type :plain)))
-               (:constructor println-item-type-string (&key (type :string-literal)))
-               (:conc-name println-item-type->))
-  (type :rich :read-only nil :documentation "One of :rich :plain :string-literal"))
+               (:conc-name println-killed-text->))
+  killed-text
+  (type :rich :read-only nil :documentation "One of :rich :plain :string-literal :foreach or :foreach-delimited"))
 
-(cl-defstruct (println-item-data
-               (:constructor println-item-data-create)
+(cl-defstruct (println-cluster
+               (:constructor println-cluster-create)
                (:copier nil)
-               (:conc-name println-item-data->))
-  item
-  (type (println-item-type-rich)))
-
-(cl-defstruct (println-cluster-data
-               (:constructor println-cluster-data-create)
-               (:copier nil)
-               (:conc-name println-cluster-data->))
-  items identifier flags indentation)
+               (:conc-name println-cluster->))
+  ;; list of println-killed-texts and/or println-stamps
+  items
+  ;; name of function/defun wrapping current println cluster. It is determined by mode specific function.
+  identifier
+  ;; cluster local flags
+  flags
+  ;; indentation of the cluster
+  indentation)
 
 (cl-defstruct (println-flags
                (:constructor println-flags-create)
@@ -89,57 +87,53 @@
 
 (defvar println-global-preferences
   (println-preferences-create
+   ;; Counter for :stamp mode.
    :counter 0
-   :mode :item
+   ;; Either :killed-text or :stamp. Determines mode to use to start a new println cluster.
+   :mode :killed-text
    :flags println-global-flags)
   "Preferences to use when creating new cluster of print statements.")
 
 (defun println-data-add-item (data item)
-  (setf (println-cluster-data->items data)
-        (append (println-cluster-data->items data) (list (println-item-data-create :item item)))))
-
-(defun println-data-update-item (overlay current modified)
-  (let ((data (overlay-get overlay 'print-ln)))
-    (setf (println-cluster-data->items data)
-          (seq-map (lambda (item) (if (eq item current) modified item)) (println-cluster-data->items data)))))
+  (setf (println-cluster->items data)
+        (append (println-cluster->items data) (list (println-killed-text-create :killed-text item)))))
 
 (defun println-table-remove-row (data)
-  (let* ((items (println-cluster-data->items data)))
+  (let* ((items (println-cluster->items data)))
     (if (= 1 (length items))
         (progn (println-delete-current)
                (forward-line -1))
-      (setf (println-cluster-data->items data)
+      (setf (println-cluster->items data)
             (reverse (cdr (reverse items))))
       (println-refresh data))))
 
-(defun println-toggle-identifier (data)
-  (let* ((flags (println-cluster-data->flags data))
-         (global (println-preferences->flags println-global-preferences))
-         (show-identifier (not (println-flags->show-identifier flags))))
-    (setf (println-flags->show-identifier flags) show-identifier
-          (println-flags->show-identifier global) show-identifier)))
-
 (defun println-toggle-multiline (data)
-  (let* ((flags (println-cluster-data->flags data))
+  (let* ((flags (println-cluster->flags data))
          (global (println-preferences->flags println-global-preferences))
          (multiline (not (println-flags->multiline flags))))
     (setf (println-flags->multiline flags) multiline
           (println-flags->multiline global) multiline)))
 
 (defun println-toggle-align (data)
-  (let* ((flags (println-cluster-data->flags data))
+  (let* ((flags (println-cluster->flags data))
          (global (println-preferences->flags println-global-preferences))
          (align (not (println-flags->align flags))))
     (setf (println-flags->align flags) align
           (println-flags->align global) align)))
 
-(defun println-get-data ()
-  (get-char-property (point) 'print-ln))
+(defun println-get-line-data ()
+  (if-let ((println-line-data (get-text-property (if (eolp) (1- (point)) (point)) 'println-line-data)))
+      println-line-data
+    (let ((line (thing-at-point 'line)))
+      (get-text-property (next-single-property-change 0 'println-line-data line) 'println-line-data line))))
+
+(defun println-get-cluster-data ()
+  (get-char-property (point) 'println-cluster))
 
 (defmacro println-with-cluster-data (cluster-data body)
   (declare (indent 1) (debug t))
-  `(let* ((,cluster-data (println-get-data)))
-     (if (println-cluster-data-p ,cluster-data)
+  `(let* ((,cluster-data (println-get-cluster-data)))
+     (if (println-cluster-p ,cluster-data)
          ,body
        (user-error "No cluster data found at the point."))))
 
@@ -147,21 +141,7 @@
   (declare (indent 1) (debug t))
   `(println-with-cluster-data ,cluster-data
      (progn ,body
-            (let ((old-line-num (line-number-at-pos))
-                  (old-column (current-column))
-                  (old-eol (eolp)))
-              (println-refresh ,cluster-data)
-              (goto-char (point-min))
-              (forward-line (1- old-line-num))
-              (goto-char (if old-eol
-                             (line-end-position)
-                           (min (line-end-position) (+ (line-beginning-position) old-column))))))))
-
-(defun println-get-line-data ()
-  (if-let ((item-data (get-text-property (if (eolp) (1- (point)) (point)) 'item-data)))
-      item-data
-    (let ((line (thing-at-point 'line)))
-      (get-text-property (next-single-property-change 0 'item-data line) 'item-data line))))
+            (println-refresh ,cluster-data))))
 
 (defun println-align ()
   (interactive)
@@ -170,19 +150,22 @@
 
 (defun println-multiline ()
   (interactive)
-  (let ((data (println-get-data)))
-    (println-toggle-multiline data)
-    (println-refresh data)))
+  (println-modify-and-refresh-cluster data
+    (println-toggle-multiline data)))
 
 (defun println-show-identifier ()
   (interactive)
   (println-modify-and-refresh-cluster data
-    (println-toggle-identifier data)))
+    (let* ((flags (println-cluster->flags data))
+           (global (println-preferences->flags println-global-preferences))
+           (show-identifier (not (println-flags->show-identifier flags))))
+      (setf (println-flags->show-identifier flags) show-identifier
+            (println-flags->show-identifier global) show-identifier))))
 
 (defun println-next-kill (data)
-  (let ((items (seq-map #'println-item-data->item
-                        (seq-filter #'println-item-data-p
-                                    (println-cluster-data->items data))))
+  (let ((items (seq-map #'println-killed-text->killed-text
+                        (seq-filter #'println-killed-text-p
+                                    (println-cluster->items data))))
         (kill-items (println-preprocess-kill-ring)))
     (seq-find (lambda (kill-item)
                 (not (member kill-item items)))
@@ -190,7 +173,7 @@
 
 (defun println-increase ()
   (interactive)
-  (let* ((data (println-get-data))
+  (let* ((data (println-get-cluster-data))
          (next-kill (println-next-kill data)))
     (if (not next-kill)
         (message "No more elements in kill-ring")
@@ -209,26 +192,25 @@
 
 (defun println-decrease ()
   (interactive)
-  (let ((data (println-get-data)))
+  (let ((data (println-get-cluster-data)))
     (println-table-remove-row data)))
 
 (defun println-stamp ()
   (interactive)
-
   (println-modify-and-refresh-cluster data
     (if (println-singleline-p data)
         (println-toggle-multiline data)
       (let* ((item-old (println-get-line-data))
-             (items (println-cluster-data->items data))
+             (items (println-cluster->items data))
              (index (seq-position items item-old))
-             (item-new (cond ((println-item-data-p item-old)
+             (item-new (cond ((println-killed-text-p item-old)
                               (setf (println-preferences->mode println-global-preferences) :stamp)
-                              (println-stamp-data-create :order
-                                                         (setf (println-preferences->counter println-global-preferences)
-                                                               (1+ (println-preferences->counter println-global-preferences)))))
-                             ((println-stamp-data-p item-old)
-                              (setf (println-preferences->mode println-global-preferences) :item)
-                              (println-item-data-create :item (println-next-kill data))))))
+                              (println-stamp-create :order
+                                                    (setf (println-preferences->counter println-global-preferences)
+                                                          (1+ (println-preferences->counter println-global-preferences)))))
+                             ((println-stamp-p item-old)
+                              (setf (println-preferences->mode println-global-preferences) :killed-text)
+                              (println-killed-text-create :killed-text (println-next-kill data))))))
         (if (numberp index)
             (setf (nth index items) item-new)
           (error "Index of element '%s' not found" item-old))))))
@@ -242,53 +224,51 @@
   (interactive)
   (println-modify-and-refresh-cluster data
     (progn
-      (let* ((items (println-cluster-data->items data))
+      (let* ((items (println-cluster->items data))
              (items-with-index (seq-map-indexed (lambda (elt idx)
                                                   (list idx elt))
                                                 items))
-             (indexed-stamps-only (seq-filter  (lambda (s) (println-stamp-data-p (cadr s))) items-with-index))
-             (items-only (seq-filter  #'println-item-data-p items))
+             (indexed-stamps-only (seq-filter  (lambda (s) (println-stamp-p (cadr s))) items-with-index))
+             (items-only (seq-filter  #'println-killed-text-p items))
              (reversed (reverse items-only)))
         (dolist (element indexed-stamps-only)
           (let ((stamp-index (car element))
                 (stamp (cadr element)))
             (push stamp (nthcdr stamp-index reversed))))
-        (setf (println-cluster-data->items data) reversed)))))
+        (setf (println-cluster->items data) reversed)))))
 
 (defun println-literal/identifier ()
   (interactive)
   (println-modify-and-refresh-cluster data
     (if (println-singleline-p data)
         (println-toggle-multiline data)
-      (if (println-align-p data)
-          (println-toggle-align data)
-        (let* ((line-data (println-get-line-data))
-               (type (println-item-data->type line-data)))
-          (let ((next-type
-                 (pcase (println-item-type->type type)
-                   (:rich :string-literal)
-                   (:string-literal :plain)
-                   (:plain :rich)
-                   (_ :rich))))
-            (setf (println-item-type->type type) next-type)))))))
+      (if (println-stamp-p (println-get-line-data))
+          (message "Can't apply literal/identifier on stamp data")
+        (when (println-align-p data)
+          (println-toggle-align data))
+        (let ((line-data (println-get-line-data)))
+          (setf (println-killed-text->type line-data)
+                (pcase (println-killed-text->type line-data)
+                  (:rich :string-literal)
+                  (:string-literal :plain)
+                  (:plain :rich)
+                  (_ :rich))))))))
 
 (defun println-foreach ()
   (interactive)
   (println-modify-and-refresh-cluster data
     (if (println-singleline-p data)
         (println-toggle-multiline data)
-      (if (println-stamp-data-p (println-get-line-data))
+      (if (println-stamp-p (println-get-line-data))
           (message "Can't apply foreach on stamp data")
         (when (println-align-p data)
           (println-toggle-align data))
-        (let* ((line-data (println-get-line-data))
-               (type (println-item-data->type line-data)))
-          (let ((next-type
-                 (pcase (println-item-type->type type)
-                   (:foreach :foreach-delimited)
-                   (:foreach-delimited :foreach)
-                   (_ :foreach))))
-            (setf (println-item-type->type type) next-type)))))))
+        (let ((line-data (println-get-line-data)))
+          (setf (println-killed-text->type line-data)
+                (pcase (println-killed-text->type line-data)
+                  (:foreach :foreach-delimited)
+                  (:foreach-delimited :foreach)
+                  (_ :foreach))))))))
 
 (defvar println-keymap
   (let ((map (make-sparse-keymap)))
@@ -310,7 +290,7 @@
 
 (defun println-newline ()
   (interactive)
-  (when-let ((overlay (println-find-overlay-specifying 'print-ln)))
+  (when-let ((overlay (println-find-overlay-specifying 'println-cluster)))
     (if (not (= 1 (- (overlay-end overlay) (point))))
         (let ((original-binding (key-binding (kbd "RET") nil nil (point-min))))
           ;; Call whatever was originally bind by "RET" key.
@@ -323,9 +303,9 @@
 
 (defun println-commit ()
   (interactive)
-  (let* ((data (println-get-data))
+  (let* ((data (println-get-cluster-data))
          (str (println-render data))
-         (indentation (println-cluster-data->indentation data))
+         (indentation (println-cluster->indentation data))
          (content (concat indentation str "\n"))
          (point (point)))
     (println-delete-current)
@@ -341,7 +321,7 @@
     (seq-find (lambda (overlay) (overlay-get overlay prop)) overlays)))
 
 (defun println-delete-current ()
-  (when-let ((overlay (println-find-overlay-specifying 'print-ln)))
+  (when-let ((overlay (println-find-overlay-specifying 'println-cluster)))
     (delete-region (overlay-start overlay) (overlay-end overlay))))
 
 (defun println-safe-string (str)
@@ -353,64 +333,65 @@
     ""))
 
 (defun println-apply-renderer-by-item-type (item identifier indentation)
-  (let ((type (println-item-type->type (println-item-data->type item))))
+  (let ((type (println-killed-text->type item)))
     (pcase type
       (:rich
        (if-let ((basic-renderer (gethash major-mode println-basic-renderer)))
-           (funcall basic-renderer (println-item-data->item item) identifier)
+           (funcall basic-renderer (println-killed-text->killed-text item) identifier)
          (user-error "No basic renderer found for %s." major-mode)))
       (:string-literal
        (if-let ((string-literal-renderer (gethash major-mode println-basic-literal-string-renderer)))
-           (funcall string-literal-renderer (println-item-data->item item))
+           (funcall string-literal-renderer (println-killed-text->killed-text item))
          (user-error "No string literal renderer found for %s." major-mode)))
       (:plain
        (if-let ((value-renderer (gethash major-mode println-basic-value-renderer)))
-           (funcall value-renderer (println-item-data->item item))
+           (funcall value-renderer (println-killed-text->killed-text item))
          (user-error "No value renderer found for %s." major-mode)))
       ((or :foreach :foreach-delimited)
        (if-let ((foreach-renderer (gethash major-mode println-foreach-renderer)))
-           (replace-regexp-in-string "\n" (format "\n%s" indentation) (funcall foreach-renderer (println-item-data->item item) type))
+           (replace-regexp-in-string "\n" (format "\n%s" indentation) (funcall foreach-renderer (println-killed-text->killed-text item) type))
          (user-error "No foreach renderer found for %s." major-mode))))))
 
 (defun println-to-string (item identifier indentation)
-  (cond ((println-item-data-p item)
-         (propertize (println-apply-renderer-by-item-type item identifier indentation) 'item-data item))
-        ((println-stamp-data-p item)
+  (cond ((println-killed-text-p item)
+         (propertize (println-apply-renderer-by-item-type item identifier indentation) 'println-line-data item))
+        ((println-stamp-p item)
          (if-let ((stamp-renderer (gethash major-mode println-stamp-renderer)))
-             (propertize (funcall stamp-renderer (println-stamp-data->order item)) 'item-data item)
+             (propertize (funcall stamp-renderer (println-stamp->order item)) 'println-line-data item)
            (user-error "No stamp renderer found for %s." major-mode)))))
 
 (defun println-to-string-aligned (item longest identifier)
-  (cond ((println-item-data-p item)
+  (cond ((println-killed-text-p item)
          (when-let ((aligned-renderer (gethash major-mode println-aligned-renderer)))
-           (propertize (funcall aligned-renderer (println-item-data->item item) longest identifier) 'item-data item)))
-        ((println-stamp-data-p item)
+           (propertize (funcall aligned-renderer (println-killed-text->killed-text item) longest identifier) 'println-line-data item)))
+        ((println-stamp-p item)
          (when-let ((stamp-renderer (gethash major-mode println-stamp-renderer)))
-           (propertize (funcall stamp-renderer (println-stamp-data->order item)) 'item-data item)))))
+           (propertize (funcall stamp-renderer (println-stamp->order item)) 'println-line-data item)))))
 
 (defun println-render-single-line (items identifier)
   (when-let ((single-line-renderer (gethash major-mode println-single-line-renderer)))
-    (funcall single-line-renderer (mapcar #'println-item-data->item (seq-filter #'println-item-data-p items)) identifier)))
+    (funcall single-line-renderer (mapcar #'println-killed-text->killed-text (seq-filter #'println-killed-text-p items)) identifier)))
 
 (defun println-multiline-p (data)
-  (println-flags->multiline (println-cluster-data->flags data)))
+  (println-flags->multiline (println-cluster->flags data)))
 
 (defun println-singleline-p (data)
+  "Returns t if items from DATA are printed on a single line, otherwise nil"
   (not (println-multiline-p data)))
 
 (defun println-align-p (data)
-  (println-flags->align (println-cluster-data->flags data)))
+  (println-flags->align (println-cluster->flags data)))
 
 (defun println-show-identifier-p (data)
-  (println-flags->show-identifier (println-cluster-data->flags data)))
+  (println-flags->show-identifier (println-cluster->flags data)))
 
 (defun println-render (data)
-  (let ((items (println-cluster-data->items data))
-        (identifier (when (println-show-identifier-p data) (println-cluster-data->identifier data)))
-        (indentation (println-cluster-data->indentation data)))
+  (let ((items (println-cluster->items data))
+        (identifier (when (println-show-identifier-p data) (println-cluster->identifier data)))
+        (indentation (println-cluster->indentation data)))
     (if (println-multiline-p data)
         (if (println-align-p data)
-            (let* ((widths (seq-map (lambda (item) (string-width (or (println-item-data->item item) ""))) (seq-filter #'println-item-data-p items)))
+            (let* ((widths (seq-map (lambda (item) (string-width (or (println-killed-text->killed-text item) ""))) (seq-filter #'println-killed-text-p items)))
                    (longest (if widths (seq-max widths) 0)))
               (mapconcat (lambda (item)
                            (println-to-string-aligned item longest identifier))
@@ -431,20 +412,20 @@
     (newline 1)
     (indent-according-to-mode)
     (prog1 (if indent-tabs-mode
-                (make-string (/ (current-indentation) tab-width) ?\t)
+               (make-string (/ (current-indentation) tab-width) ?\t)
              (make-string (current-indentation) ?\ ))
       (delete-region (1- (line-beginning-position)) (point)))))
 
 (defun println-standard (prefix)
   (if (null kill-ring)
       (message "Nothing to print, kill-ring is empty")
-    (when (println-get-data)
+    (when (println-get-cluster-data)
       (println-delete-current))
     (let* ((kill-ring (println-preprocess-kill-ring))
            (identifier (println-search-identifier))
            (flags (println-preferences->flags println-global-preferences))
            (indentation (println-indentation))
-           (data (println-cluster-data-create :items nil :identifier identifier :flags flags :indentation indentation)))
+           (data (println-cluster-create :items nil :identifier identifier :flags flags :indentation indentation)))
       (dotimes (item (min prefix (length kill-ring)))
         (let ((current (nth item kill-ring)))
           (println-data-add-item data current)))
@@ -452,15 +433,15 @@
       (println-write data))))
 
 (defun println-add-stamp ()
-  (when (println-get-data)
+  (when (println-get-cluster-data)
     (println-delete-current))
   (let* ((identifier (println-search-identifier))
          (flags (println-preferences->flags println-global-preferences))
          (indentation (println-indentation))
-         (data (println-cluster-data-create
-                :items (list (println-stamp-data-create :order
-                                                        (setf (println-preferences->counter println-global-preferences)
-                                                              (1+ (println-preferences->counter println-global-preferences)))))
+         (data (println-cluster-create
+                :items (list (println-stamp-create :order
+                                                   (setf (println-preferences->counter println-global-preferences)
+                                                         (1+ (println-preferences->counter println-global-preferences)))))
                 :identifier identifier
                 :flags flags
                 :indentation indentation)))
@@ -471,7 +452,7 @@
 (defun println-insert (prefix)
   (interactive "p")
   (pcase (println-preferences->mode println-global-preferences)
-    (:item (println-standard prefix))
+    (:killed-text (println-standard prefix))
     (:stamp (println-add-stamp))
     (_ (error "Unknown mode %s" (println-preferences->mode println-global-preferences)))))
 
@@ -484,7 +465,7 @@
     (println-render-content data str)))
 
 (defun println-render-content (data content)
-  (let* ((indentation (println-cluster-data->indentation data))
+  (let* ((indentation (println-cluster->indentation data))
          (content (concat indentation content "\n"))
          (start (line-beginning-position)))
     (beginning-of-line nil)
@@ -493,7 +474,7 @@
       (overlay-put overlay 'face 'println-diff-hunk-heading)
       (overlay-put overlay 'evaporate t)
       (overlay-put overlay 'keymap println-keymap)
-      (overlay-put overlay 'print-ln data)
+      (overlay-put overlay 'println-cluster data)
       (backward-char))))
 
 (defun println-register-major-mode (major-mode basic literal-string value aligned single identifier stamp foreach)

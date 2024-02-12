@@ -228,3 +228,95 @@ object Handler {
   println("lorem: " + lorem + ", pipa: " + pipa + ", foo: " + foo)|
 }
 =-=-=
+
+Name: scala - print foreach basic
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-foreach))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  lorem.foreach(println)|
+}
+=-=-=
+
+Name: scala - print foreach basic -> delimited
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-foreach)
+    (funcall-interactively 'println-foreach))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("lorem START")
+  lorem.foreach(println)
+  println("lorem END")|
+}
+=-=-=
+
+
+Name: scala - print foreach basic -> delimited -> basic
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-foreach)
+    (funcall-interactively 'println-foreach)
+    (funcall-interactively 'println-foreach))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  lorem.foreach(println)|
+}
+=-=-=
+
+Name: scala - print identifier only
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-literal/identifier))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("lorem")|
+}
+=-=-=
+
+Name: scala - print literal only
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-literal/identifier)
+    (funcall-interactively 'println-literal/identifier))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println(lorem)|
+}
+=-=-=

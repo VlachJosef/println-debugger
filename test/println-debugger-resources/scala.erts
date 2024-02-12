@@ -260,12 +260,11 @@ object Handler {|
 }
 =-=
 object Handler {
-  println("lorem START")
+  println("lorem START")|
   lorem.foreach(println)
-  println("lorem END")|
+  println("lorem END")
 }
 =-=-=
-
 
 Name: scala - print foreach basic -> delimited -> basic
 Code:

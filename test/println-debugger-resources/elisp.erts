@@ -5,7 +5,7 @@ Code:
     (println-preferences-default)
     (emacs-lisp-mode)
     (kill-new "hello")
-    (funcall-interactively 'println-insert-after 1))
+    (funcall-interactively 'println-insert 1))
 =-=
 (defun foo (hello)|
 )

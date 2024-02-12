@@ -467,7 +467,8 @@
     (forward-line)
     (println-write data)))
 
-(defun println-insert-after (prefix)
+;;;###autoload
+(defun println-insert (prefix)
   (interactive "p")
   (pcase (println-preferences->mode println-global-preferences)
     (:item (println-standard prefix))

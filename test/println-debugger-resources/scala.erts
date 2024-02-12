@@ -5,7 +5,7 @@ Code:
     (println-preferences-default)
     (scala-ts-mode)
     (kill-new "hello")
-    (funcall-interactively 'println-insert-after 1))
+    (funcall-interactively 'println-insert 1))
 =-=
 object Handler {|
 }
@@ -43,7 +43,7 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert-after 3))
+    (funcall-interactively 'println-insert 3))
 =-=
 object Handler {|
 }
@@ -63,7 +63,7 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert-after 3)
+    (funcall-interactively 'println-insert 3)
     (funcall-interactively 'println-reverse))
 =-=
 object Handler {|
@@ -82,7 +82,7 @@ Code:
     (println-preferences-default)
     (scala-ts-mode)
     (kill-new "lorem")
-    (funcall-interactively 'println-insert-after 1)
+    (funcall-interactively 'println-insert 1)
     (funcall-interactively 'println-stamp))
 =-=
 object Handler {|
@@ -99,7 +99,7 @@ Code:
     (println-preferences-default)
     (scala-ts-mode)
     (kill-new "lorem")
-    (funcall-interactively 'println-insert-after 1)
+    (funcall-interactively 'println-insert 1)
     (funcall-interactively 'println-stamp)
     (funcall-interactively 'println-increase))
 =-=
@@ -121,7 +121,7 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert-after 1)
+    (funcall-interactively 'println-insert 1)
     (funcall-interactively 'println-stamp)
     (funcall-interactively 'println-increase)
     (funcall-interactively 'println-increase)
@@ -146,7 +146,7 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert-after 1)
+    (funcall-interactively 'println-insert 1)
     (funcall-interactively 'println-stamp)
     (funcall-interactively 'println-increase)
     (funcall-interactively 'println-increase)
@@ -172,7 +172,7 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert-after 1)
+    (funcall-interactively 'println-insert 1)
     (funcall-interactively 'println-stamp)
     (funcall-interactively 'println-increase)
     (funcall-interactively 'println-increase)
@@ -198,7 +198,7 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert-after 3)
+    (funcall-interactively 'println-insert 3)
     (funcall-interactively 'println-multiline))
 =-=
 object Handler {|
@@ -217,7 +217,7 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert-after 3)
+    (funcall-interactively 'println-insert 3)
     (funcall-interactively 'println-multiline)
     (funcall-interactively 'println-reverse))
 =-=

@@ -52,30 +52,30 @@
                              #'println-javascript-to-string
                              #'println-javascript-literal-string
                              #'println-javascript-value
+                             #'println-javascript-foreach
                              #'println-javascript-to-string-aligned
                              #'println-javascript-render-single-line
                              #'println-javascript-identifier
-                             #'println-javascript-stamp
-                             #'println-javascript-foreach)
+                             #'println-javascript-stamp)
 
 (println-register-major-mode 'typescript-ts-mode
                              #'println-javascript-to-string
                              #'println-javascript-literal-string
                              #'println-javascript-value
+                             #'println-javascript-foreach
                              #'println-javascript-to-string-aligned
                              #'println-javascript-render-single-line
                              #'println-javascript-identifier
-                             #'println-javascript-stamp
-                             #'println-javascript-foreach)
+                             #'println-javascript-stamp)
 
 (println-register-major-mode 'tsx-ts-mode
                              #'println-javascript-to-string
                              #'println-javascript-literal-string
                              #'println-javascript-value
+                             #'println-javascript-foreach
                              #'println-javascript-to-string-aligned
                              #'println-javascript-render-single-line
                              #'println-javascript-identifier
-                             #'println-javascript-stamp
-                             #'println-javascript-foreach)
+                             #'println-javascript-stamp)
 
 (provide 'println-debugger-javascript)

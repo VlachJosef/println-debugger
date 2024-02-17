@@ -67,10 +67,10 @@
                              #'println-scala-to-string
                              #'println-scala-literal-string
                              #'println-scala-value
+                             #'println-scala-foreach
                              #'println-scala-to-string-aligned
                              #'println-scala-render-single-line
                              #'println-scala-identifier
-                             #'println-scala-stamp
-                             #'println-scala-foreach)
+                             #'println-scala-stamp)
 
 (provide 'println-debugger-scala)

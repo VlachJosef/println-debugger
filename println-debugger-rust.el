@@ -55,10 +55,10 @@
                              #'println-rust-to-string
                              #'println-rust-literal-string
                              #'println-rust-value
+                             #'println-rust-foreach
                              #'println-rust-to-string-aligned
                              #'println-rust-render-single-line
                              #'println-rust-identifier
-                             #'println-rust-stamp
-                             #'println-rust-foreach)
+                             #'println-rust-stamp)
 
 (provide 'println-debugger-rust)

@@ -13,7 +13,7 @@
 
 (eval-when-compile (require 'subr-x))
 
-(defface println-diff-hunk-heading
+(defface println-cluster-overlay
   '((((class color) (background dark))
      :extend t
      :background "DarkSlateBlue"))
@@ -23,17 +23,11 @@
 (defvar println-basic-renderer (make-hash-table))
 (defvar println-basic-value-renderer (make-hash-table))
 (defvar println-basic-literal-string-renderer (make-hash-table))
+(defvar println-foreach-renderer (make-hash-table))
 (defvar println-aligned-renderer (make-hash-table))
 (defvar println-single-line-renderer (make-hash-table))
 (defvar println-identifier-founder (make-hash-table))
 (defvar println-stamp-renderer (make-hash-table))
-(defvar println-foreach-renderer (make-hash-table))
-
-(cl-defstruct (println-revert-info
-               (:constructor println-revert-info-create)
-               (:copier nil)
-               (:conc-name println-revert-info->))
-  data)
 
 (cl-defstruct (println-preferences
                (:constructor println-preferences-create)
@@ -77,20 +71,16 @@
                (:conc-name println-flags->))
   multiline align show-identifier)
 
-(defvar println-global-flags
-  (println-flags-create
-   :multiline t
-   :align nil
-   :show-identifier nil)
-  "Flags to use when creating new cluster of print statements.")
-
 (defvar println-global-preferences
   (println-preferences-create
    ;; Counter for :stamp mode.
    :counter 0
-   ;; Either :killed-text or :stamp. Determines mode to use to start a new println cluster.
+   ;; Either :killed-text or :stamp. Determines mode to start new println cluster in.
    :mode :killed-text
-   :flags println-global-flags)
+   :flags (println-flags-create
+           :multiline t
+           :align nil
+           :show-identifier nil))
   "Preferences to use when creating new cluster of print statements.")
 
 (defun println-data-add-item (cluster-data item)
@@ -337,45 +327,48 @@ item data, for example when rendering println cluster as single line."
       (format "[%s] " identifier)
     ""))
 
+(defun println-renderer (type)
+  (let ((renderer
+         (gethash major-mode (pcase type
+                               (:rich println-basic-renderer)
+                               (:plain println-basic-value-renderer)
+                               (:string-literal println-basic-literal-string-renderer)
+                               ((or :foreach :foreach-delimited) println-foreach-renderer)
+                               (:align println-aligned-renderer)
+                               (:single println-single-line-renderer)
+                               (:stamp println-stamp-renderer)))))
+    (unless renderer
+      (user-error "No %s renderer found for %s." type major-mode))
+    renderer))
+
 (defun println-apply-renderer-by-item-type (item identifier indentation)
-  (let ((type (println-killed-text->type item)))
+  (let* ((type (println-killed-text->type item))
+         (killed-text (println-killed-text->killed-text item))
+         (renderer (println-renderer type)))
     (pcase type
       (:rich
-       (if-let ((basic-renderer (gethash major-mode println-basic-renderer)))
-           (funcall basic-renderer (println-killed-text->killed-text item) identifier)
-         (user-error "No basic renderer found for %s." major-mode)))
-      (:string-literal
-       (if-let ((string-literal-renderer (gethash major-mode println-basic-literal-string-renderer)))
-           (funcall string-literal-renderer (println-killed-text->killed-text item))
-         (user-error "No string literal renderer found for %s." major-mode)))
+       (funcall renderer killed-text identifier))
       (:plain
-       (if-let ((value-renderer (gethash major-mode println-basic-value-renderer)))
-           (funcall value-renderer (println-killed-text->killed-text item))
-         (user-error "No value renderer found for %s." major-mode)))
+       (funcall renderer killed-text))
+      (:string-literal
+       (funcall renderer killed-text))
       ((or :foreach :foreach-delimited)
-       (if-let ((foreach-renderer (gethash major-mode println-foreach-renderer)))
-           (replace-regexp-in-string "\n" (format "\n%s" indentation) (funcall foreach-renderer (println-killed-text->killed-text item) type))
-         (user-error "No foreach renderer found for %s." major-mode))))))
+       (replace-regexp-in-string "\n" (format "\n%s" indentation) (funcall renderer killed-text type))))))
 
 (defun println-to-string (item identifier indentation)
   (cond ((println-killed-text-p item)
          (propertize (println-apply-renderer-by-item-type item identifier indentation) 'println-line-data item))
         ((println-stamp-p item)
-         (if-let ((stamp-renderer (gethash major-mode println-stamp-renderer)))
-             (propertize (funcall stamp-renderer (println-stamp->order item)) 'println-line-data item)
-           (user-error "No stamp renderer found for %s." major-mode)))))
+         (propertize (funcall (println-renderer :stamp) (println-stamp->order item)) 'println-line-data item))))
 
 (defun println-to-string-aligned (item longest identifier)
   (cond ((println-killed-text-p item)
-         (when-let ((aligned-renderer (gethash major-mode println-aligned-renderer)))
-           (propertize (funcall aligned-renderer (println-killed-text->killed-text item) longest identifier) 'println-line-data item)))
+         (propertize (funcall (println-renderer :align) (println-killed-text->killed-text item) longest identifier) 'println-line-data item))
         ((println-stamp-p item)
-         (when-let ((stamp-renderer (gethash major-mode println-stamp-renderer)))
-           (propertize (funcall stamp-renderer (println-stamp->order item)) 'println-line-data item)))))
+         (propertize (funcall (println-renderer :stamp) (println-stamp->order item)) 'println-line-data item))))
 
 (defun println-render-single-line (items identifier)
-  (when-let ((single-line-renderer (gethash major-mode println-single-line-renderer)))
-    (funcall single-line-renderer (mapcar #'println-killed-text->killed-text (seq-filter #'println-killed-text-p items)) identifier)))
+  (funcall (println-renderer :single) (mapcar #'println-killed-text->killed-text (seq-filter #'println-killed-text-p items)) identifier))
 
 (defun println-multiline-p (data)
   (println-flags->multiline (println-cluster->flags data)))
@@ -446,12 +439,12 @@ item data, for example when rendering println cluster as single line."
          (flags (copy-println-flags global-flags))
          (indentation (println-indentation))
          (cluster-data (println-cluster-create
-                :items (list (println-stamp-create :order
-                                                   (setf (println-preferences->counter println-global-preferences)
-                                                         (1+ (println-preferences->counter println-global-preferences)))))
-                :identifier identifier
-                :flags flags
-                :indentation indentation)))
+                        :items (list (println-stamp-create :order
+                                                           (setf (println-preferences->counter println-global-preferences)
+                                                                 (1+ (println-preferences->counter println-global-preferences)))))
+                        :identifier identifier
+                        :flags flags
+                        :indentation indentation)))
     (forward-line)
     (println-write cluster-data)))
 
@@ -482,20 +475,20 @@ item data, for example when rendering println cluster as single line."
     (beginning-of-line nil)
     (insert content)
     (let ((overlay (make-overlay start (point) (current-buffer) t nil)))
-      (overlay-put overlay 'face 'println-diff-hunk-heading)
+      (overlay-put overlay 'face 'println-cluster-overlay)
       (overlay-put overlay 'evaporate t)
       (overlay-put overlay 'keymap println-keymap)
       (overlay-put overlay 'println-cluster data)
       (backward-char))))
 
-(defun println-register-major-mode (major-mode basic literal-string value aligned single identifier stamp foreach)
+(defun println-register-major-mode (major-mode basic literal-string value foreach aligned single identifier stamp)
   (puthash major-mode basic println-basic-renderer)
   (puthash major-mode literal-string println-basic-literal-string-renderer)
   (puthash major-mode value println-basic-value-renderer)
+  (puthash major-mode foreach println-foreach-renderer)
   (puthash major-mode aligned println-aligned-renderer)
   (puthash major-mode single println-single-line-renderer)
   (puthash major-mode identifier println-identifier-founder)
-  (puthash major-mode stamp println-stamp-renderer)
-  (puthash major-mode foreach println-foreach-renderer))
+  (puthash major-mode stamp println-stamp-renderer))
 
 (provide 'println-debugger-common)

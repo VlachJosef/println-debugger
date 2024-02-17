@@ -55,10 +55,10 @@
                              #'println-emacs-lisp-to-string
                              #'println-emacs-lisp-literal-string
                              #'println-emacs-lisp-value
+                             #'println-emacs-lisp-foreach
                              #'println-emacs-lisp-to-string-aligned
                              #'println-emacs-lisp-render-single-line
                              #'println-emacs-lisp-search-defun
-                             #'println-emacs-lisp-stamp
-                             #'println-emacs-lisp-foreach)
+                             #'println-emacs-lisp-stamp)
 
 (provide 'println-debugger-emacs-lisp)

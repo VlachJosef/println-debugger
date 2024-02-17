@@ -330,12 +330,12 @@ Code:
     (funcall-interactively 'println-insert 1)
     (funcall-interactively 'println-increase)
     (funcall-interactively 'println-align)
-    (funcall-interactively 'next-line)
+    (line-move-1 1)
     (funcall-interactively 'println-insert 1)
     (funcall-interactively 'println-increase)
     (funcall-interactively 'println-align)
     (funcall-interactively 'println-commit)
-    (funcall-interactively 'previous-line 3)
+    (line-move-1 -3)
     (funcall-interactively 'println-commit))
 =-=
 object Handler {|
@@ -344,14 +344,14 @@ object Handler {|
 =-=
 object Handler {
   println("lorem: " + lorem)
-  println("foo  : " + foo)|
+  println("foo  : " + fo|o)
 
   println("lorem: " + lorem)
   println("foo: " + foo)
 }
 =-=-=
 
-Name: scala - committing two stamp clusters must apply local cluster settings
+Name: scala - committing two stamp starting clusters must apply local cluster settings
 Code:
   (lambda ()
     (println-preferences-stamp-cluster)
@@ -362,13 +362,13 @@ Code:
     (funcall-interactively 'println-increase)
     (funcall-interactively 'println-increase)
     (funcall-interactively 'println-align)
-    (funcall-interactively 'next-line)
+    (line-move-1 1)
     (funcall-interactively 'println-insert 1)
     (funcall-interactively 'println-increase)
     (funcall-interactively 'println-increase)
     (funcall-interactively 'println-align)
     (funcall-interactively 'println-commit)
-    (funcall-interactively 'previous-line 4)
+    (line-move-1 -4)
     (funcall-interactively 'println-commit))
 =-=
 object Handler {|
@@ -378,10 +378,76 @@ object Handler {|
 object Handler {
   println("HeRe 333")
   println("lorem: " + lorem)
-  println("foo  : " + foo)|
+  println("foo  : " + fo|o)
 
   println("HeRe 444")
   println("lorem: " + lorem)
   println("foo: " + foo)
+}
+=-=-=
+
+
+Name: scala - ignore last line line-item at the end
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "foo")
+    (kill-new "ignore-me")
+    (kill-new "lorem")
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-ignore)
+    (funcall-interactively 'println-increase))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("lorem: " + lorem)
+  println("foo: " + foo)|
+}
+=-=-=
+
+Name: scala - ignore middle line line-item
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "foo")
+    (kill-new "ignore-me")
+    (kill-new "lorem")
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-increase)
+    (line-move-1 -1)
+    (funcall-interactively 'println-ignore))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("lorem: " + lorem)
+  println("foo: " + foo)|
+}
+=-=-=
+
+Name: scala - ignoring single line replaces it next-kill
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "foo")
+    (kill-new "lorem")
+    (kill-new "ignore-me")
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-ignore)
+    (funcall-interactively 'println-ignore))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("foo: " + foo)|
 }
 =-=-=

@@ -14,6 +14,14 @@
                                                                  :align nil
                                                                  :show-identifier nil)))
 
+(defun println-preferences-stamp-cluster ()
+  (setf (println-preferences->counter println-global-preferences) 2)
+  (setf (println-preferences->mode println-global-preferences) :stamp)
+  (setf (println-preferences->flags println-global-preferences) (println-flags-create
+                                                                 :multiline t
+                                                                 :align nil
+                                                                 :show-identifier nil)))
+
 (ert-deftest println-test-scala ()
   (ert-test-erts-file (ert-resource-file "scala.erts")))
 

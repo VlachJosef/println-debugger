@@ -74,7 +74,6 @@
 
 (cl-defstruct (println-flags
                (:constructor println-flags-create)
-               (:copier nil)
                (:conc-name println-flags->))
   multiline align show-identifier)
 
@@ -429,7 +428,8 @@ item data, for example when rendering println cluster as single line."
       (println-delete-current))
     (let* ((kill-ring (println-preprocess-kill-ring))
            (identifier (println-search-identifier))
-           (flags (println-preferences->flags println-global-preferences))
+           (global-flags (println-preferences->flags println-global-preferences))
+           (flags (copy-println-flags global-flags))
            (indentation (println-indentation))
            (cluster-data (println-cluster-create :items nil :identifier identifier :flags flags :indentation indentation)))
       (dotimes (item (min prefix (length kill-ring)))
@@ -442,7 +442,8 @@ item data, for example when rendering println cluster as single line."
   (when (println-get-cluster-data)
     (println-delete-current))
   (let* ((identifier (println-search-identifier))
-         (flags (println-preferences->flags println-global-preferences))
+         (global-flags (println-preferences->flags println-global-preferences))
+         (flags (copy-println-flags global-flags))
          (indentation (println-indentation))
          (cluster-data (println-cluster-create
                 :items (list (println-stamp-create :order

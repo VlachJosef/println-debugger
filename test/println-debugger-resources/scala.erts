@@ -319,3 +319,69 @@ object Handler {
   println(lorem)|
 }
 =-=-=
+
+Name: scala - committing two clusters must apply local cluster settings
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "foo")
+    (kill-new "lorem")
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-align)
+    (funcall-interactively 'next-line)
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-align)
+    (funcall-interactively 'println-commit)
+    (funcall-interactively 'previous-line 3)
+    (funcall-interactively 'println-commit))
+=-=
+object Handler {|
+
+}
+=-=
+object Handler {
+  println("lorem: " + lorem)
+  println("foo  : " + foo)|
+
+  println("lorem: " + lorem)
+  println("foo: " + foo)
+}
+=-=-=
+
+Name: scala - committing two stamp clusters must apply local cluster settings
+Code:
+  (lambda ()
+    (println-preferences-stamp-cluster)
+    (scala-ts-mode)
+    (kill-new "foo")
+    (kill-new "lorem")
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-align)
+    (funcall-interactively 'next-line)
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-align)
+    (funcall-interactively 'println-commit)
+    (funcall-interactively 'previous-line 4)
+    (funcall-interactively 'println-commit))
+=-=
+object Handler {|
+
+}
+=-=
+object Handler {
+  println("HeRe 333")
+  println("lorem: " + lorem)
+  println("foo  : " + foo)|
+
+  println("HeRe 444")
+  println("lorem: " + lorem)
+  println("foo: " + foo)
+}
+=-=-=

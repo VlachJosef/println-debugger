@@ -414,25 +414,28 @@ Code:
   (lambda ()
     (println-preferences-default)
     (scala-ts-mode)
+    (kill-new "bar")
+    (kill-new "lorem-ipsum")
+    (kill-new "ignore")
     (kill-new "foo")
-    (kill-new "ignore-me")
-    (kill-new "lorem")
     (funcall-interactively 'println-insert 1)
     (funcall-interactively 'println-increase)
     (funcall-interactively 'println-increase)
-    (line-move-1 -1)
+    (funcall-interactively 'println-increase)
+    (line-move-1 -2)
     (funcall-interactively 'println-ignore))
 =-=
 object Handler {|
 }
 =-=
 object Handler {
-  println("lorem: " + lorem)
-  println("foo: " + foo)|
+  println("foo: " + foo)
+  println("lorem-ipsum: |" + lorem-ipsum)
+  println("bar: " + bar)
 }
 =-=-=
 
-Name: scala - ignoring single line replaces it next-kill
+Name: scala - ignoring single line replaces it with next-kill
 Code:
   (lambda ()
     (println-preferences-default)
@@ -449,5 +452,49 @@ object Handler {|
 =-=
 object Handler {
   println("foo: " + foo)|
+}
+=-=-=
+
+Name: scala - kill-text cluster - repeated ignore when kill-ring is exhausted do not delete last kill-text line
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (let ((kill-ring nil))
+      (kill-new "foo")
+      (kill-new "lorem")
+      (funcall-interactively 'println-insert 1)
+      (funcall-interactively 'println-ignore)
+      (funcall-interactively 'println-ignore)))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("foo: " + foo)|
+}
+=-=-=
+
+Name: scala - stamp cluster - repeated ignore when kill-ring is exhausted do not delete last kill-text line
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (let ((kill-ring nil))
+      (kill-new "foo")
+      (kill-new "lorem")
+      (funcall-interactively 'println-insert 1)
+      (funcall-interactively 'println-stamp)
+      (funcall-interactively 'println-increase)
+      (funcall-interactively 'println-increase)
+      (funcall-interactively 'println-ignore)
+      (funcall-interactively 'println-ignore)))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("HeRe 111")
+  println("lorem: " + lo|rem)
 }
 =-=-=

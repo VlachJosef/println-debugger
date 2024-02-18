@@ -66,7 +66,7 @@
   ;; indentation of the cluster
   indentation
   ;; list of kill-texts to ignore
-  ignore-list nil)
+  ignore-list)
 
 (cl-defstruct (println-flags
                (:constructor println-flags-create)
@@ -317,31 +317,37 @@ new line and println cluster's text overlay does not move."
     (insert content)
     (goto-char point)))
 
+(defun println-single-kill-text (cdata)
+  "Returns t if there is only single kill-text item in `cdata' otherwise nil."
+  (= 1 (seq-count (lambda (elt) (println-killed-text-p elt))
+                  (println-cluster->items cdata))))
+
 (defun println-ignore ()
-  "Adds line-data of current line to the ignored list so that it is not rendered.
+  "Add line-data of current line to the ignored list so that it is not rendered.
 Useful when kill-ring contains garbage data which should not be printed."
   (interactive)
   (println-modify-and-refresh-cluster cdata line-data
-    (cond ((println-killed-text-p line-data)
-           (let* ((index (1+ (seq-position (println-cluster->items cdata) line-data)))
-                  (items-size (length (println-cluster->items cdata)))
-                  (point-on-last-line (= index items-size))
-                  (single-item-only (= 1 items-size)))
-             (when single-item-only
-               (println-add-next-kill cdata))
-             (when (> (length (println-cluster->items cdata)) 1)
-               ;; Modify println cluster only when we have at least
-               ;; two items at this point of execution. When on end of
-               ;; kill-ring we don't want to close println cluster, to
-               ;; retain ignored items so far.
-               (setf (println-cluster->items cdata) (delete line-data (println-cluster->items cdata)))
-               (push (println-killed-text->killed-text line-data) (println-cluster->ignore-list cdata)))
-             (when (and
-                    (not single-item-only)
-                    point-on-last-line)
-               (line-move-1 -1))))
-          ((println-stamp-p line-data)
-           (message "Cannot ignore stamp")))))
+    (if (println-singleline-p cdata)
+        (println-toggle-multiline cdata)
+      (cond ((println-stamp-p line-data)
+             (message "Cannot ignore stamp"))
+            ((println-killed-text-p line-data)
+             (let* ((current-line-item-position (1+ (seq-position (println-cluster->items cdata) line-data)))
+                    (items-size (length (println-cluster->items cdata)))
+                    (point-on-last-line (= current-line-item-position items-size))
+                    (single-kill-text (println-single-kill-text cdata)))
+               (when single-kill-text
+                 (println-add-next-kill cdata)) ;; This may modify cdata
+               (when (not (println-single-kill-text cdata))
+                 ;; Modify println cluster only when we have at least
+                 ;; two kill-text items at this point of execution. When
+                 ;; on end of kill-ring we don't want to delete println
+                 ;; cluster, in order to keep ignored items so far.
+                 (setf (println-cluster->items cdata) (delete line-data (println-cluster->items cdata)))
+                 (push (println-killed-text->killed-text line-data) (println-cluster->ignore-list cdata))
+                 (when (and (not single-kill-text)
+                            point-on-last-line)
+                   (line-move-1 -1)))))))))
 
 (defun println-delete-at-point ()
   (interactive)
@@ -474,10 +480,11 @@ Useful when kill-ring contains garbage data which should not be printed."
          (global-flags (println-preferences->flags println-global-preferences))
          (flags (copy-println-flags global-flags))
          (indentation (println-indentation))
+         (stamp-item (println-stamp-create :order
+                                           (setf (println-preferences->counter println-global-preferences)
+                                                 (1+ (println-preferences->counter println-global-preferences)))))
          (cdata (println-cluster-create
-                 :items (list (println-stamp-create :order
-                                                    (setf (println-preferences->counter println-global-preferences)
-                                                          (1+ (println-preferences->counter println-global-preferences)))))
+                 :items (list stamp-item)
                  :identifier identifier
                  :flags flags
                  :indentation indentation

@@ -498,3 +498,20 @@ object Handler {
   println("lorem: " + lo|rem)
 }
 =-=-=
+
+Name: scala - toggle stamp to next kill-text when kill-ring is empty do nothing
+Code:
+  (lambda ()
+    (println-preferences-stamp-cluster)
+    (scala-ts-mode)
+    (let ((kill-ring nil))
+      (funcall-interactively 'println-insert 1)
+      (funcall-interactively 'println-stamp)))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("HeRe 333")|
+}
+=-=-=

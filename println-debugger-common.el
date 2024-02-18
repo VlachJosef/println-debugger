@@ -137,10 +137,11 @@ item data, for example when rendering println cluster as single line."
                              (line-end-position)
                            (min (line-end-position) (+ (line-beginning-position) old-column))))))))
 
-(defmacro println-modify-and-refresh-cluster-point-at-end (cdata body)
+(defmacro println-modify-and-refresh-cluster-point-at-end (cdata body &rest rest)
   (declare (indent 1) (debug t))
   `(println-with-cluster-data ,cdata ignore-line-data
      (progn ,body
+            ,@rest
             (println-refresh ,cdata))))
 
 (defun println-align ()
@@ -151,7 +152,8 @@ item data, for example when rendering println cluster as single line."
 (defun println-multiline ()
   (interactive)
   (println-modify-and-refresh-cluster-point-at-end cdata
-    (println-toggle-multiline cdata)))
+    (unless (println-no-kill-text cdata)
+      (println-toggle-multiline cdata))))
 
 (defun println-show-identifier ()
   (interactive)
@@ -195,11 +197,17 @@ item data, for example when rendering println cluster as single line."
   (println-modify-and-refresh-cluster-point-at-end cdata
     (println-add-next-kill cdata)))
 
+(defun println-force-multiline (cdata)
+  "Set multiline flag of `cdata' to t"
+  (setf (println-flags->multiline (println-cluster->flags cdata)) t))
+
 (defun println-decrease ()
   (interactive)
   (println-modify-and-refresh-cluster-point-at-end cdata
     (setf (println-cluster->items cdata)
-          (reverse (cdr (reverse (println-cluster->items cdata)))))))
+          (reverse (cdr (reverse (println-cluster->items cdata)))))
+    (when (println-no-kill-text cdata)
+      (println-force-multiline cdata))))
 
 (defun println-stamp ()
   (interactive)
@@ -319,10 +327,18 @@ new line and println cluster's text overlay does not move."
     (insert content)
     (goto-char point)))
 
+(defun println-count-kill-text (cdata)
+  "Returns count of kill-text items in `cdata'."
+  (seq-count (lambda (elt) (println-killed-text-p elt))
+             (println-cluster->items cdata)))
+
 (defun println-single-kill-text (cdata)
   "Returns t if there is only single kill-text item in `cdata' otherwise nil."
-  (= 1 (seq-count (lambda (elt) (println-killed-text-p elt))
-                  (println-cluster->items cdata))))
+  (= 1 (println-count-kill-text cdata)))
+
+(defun println-no-kill-text (cdata)
+  "Returns t if there is no kill-text item in `cdata' otherwise nil."
+  (= 0 (println-count-kill-text cdata)))
 
 (defun println-ignore ()
   "Add line-data of current line to the ignored list so that it is not rendered.
@@ -492,6 +508,7 @@ Useful when kill-ring contains garbage data which should not be printed."
                  :indentation indentation
                  :ignore-list nil)))
     (forward-line)
+    (println-force-multiline cdata)
     (println-write cdata)))
 
 ;;;###autoload

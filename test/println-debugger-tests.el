@@ -6,21 +6,31 @@
 (require 'ert-x)
 (require 'println-debugger)
 
+(defun println-set-preferences (counter mode flags)
+  (setf (println-preferences->counter println-global-preferences) counter)
+  (setf (println-preferences->mode println-global-preferences) mode)
+  (setf (println-preferences->flags println-global-preferences) flags))
+
 (defun println-preferences-default ()
-  (setf (println-preferences->counter println-global-preferences) 0)
-  (setf (println-preferences->mode println-global-preferences) :killed-text)
-  (setf (println-preferences->flags println-global-preferences) (println-flags-create
-                                                                 :multiline t
-                                                                 :align nil
-                                                                 :show-identifier nil)))
+  (println-set-preferences 0 :killed-text
+                           (println-flags-create
+                            :multiline t
+                            :align nil
+                            :show-identifier nil)))
 
 (defun println-preferences-stamp-cluster ()
-  (setf (println-preferences->counter println-global-preferences) 2)
-  (setf (println-preferences->mode println-global-preferences) :stamp)
-  (setf (println-preferences->flags println-global-preferences) (println-flags-create
-                                                                 :multiline t
-                                                                 :align nil
-                                                                 :show-identifier nil)))
+  (println-set-preferences 2 :stamp
+                           (println-flags-create
+                            :multiline t
+                            :align nil
+                            :show-identifier nil)))
+
+(defun println-preferences-stamp-single-line-cluster ()
+  (println-set-preferences 4 :stamp
+                           (println-flags-create
+                            :multiline nil
+                            :align nil
+                            :show-identifier nil)))
 
 (ert-deftest println-test-scala ()
   (ert-test-erts-file (ert-resource-file "scala.erts")))

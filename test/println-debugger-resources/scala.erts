@@ -515,3 +515,76 @@ object Handler {
   println("HeRe 333")|
 }
 =-=-=
+
+Name: scala - decreasing single-line cluster shows initial stamp
+Code:
+  (lambda ()
+    (println-preferences-stamp-cluster)
+    (scala-ts-mode)
+    (let ((kill-ring nil))
+      (kill-new "foo")
+      (funcall-interactively 'println-insert 1)
+      (funcall-interactively 'println-increase)
+      (funcall-interactively 'println-multiline)
+      (funcall-interactively 'println-decrease)))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("HeRe 333")|
+}
+=-=-=
+
+Name: scala - decreasing single-line cluster with initial stamp switch to multiline rendering
+Code:
+  (lambda ()
+    (println-preferences-stamp-cluster)
+    (scala-ts-mode)
+    (let ((kill-ring nil))
+      (kill-new "foo")
+      (funcall-interactively 'println-insert 1)
+      (funcall-interactively 'println-increase)
+      (funcall-interactively 'println-multiline)
+      (funcall-interactively 'println-decrease)
+      (funcall-interactively 'println-increase)))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("HeRe 333")
+  println("foo: " + foo)|
+}
+=-=-=
+
+Name: scala - starting stamp cluster with single line renderer switches to multiline renderer
+Code:
+  (lambda ()
+    (println-preferences-stamp-single-line-cluster)
+    (scala-ts-mode)
+    (funcall-interactively 'println-insert 1))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("HeRe 555")|
+}
+=-=-=
+
+Name: scala - stamp cluster do not toggle to single-line if no kill-text is in the cluster
+Code:
+  (lambda ()
+    (println-preferences-stamp-cluster)
+    (scala-ts-mode)
+    (funcall-interactively 'println-insert 1)
+    (funcall-interactively 'println-multiline))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("HeRe 333")|
+}
+=-=-=

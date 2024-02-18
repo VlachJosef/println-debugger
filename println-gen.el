@@ -30,16 +30,16 @@
 (defvar println-gen-identifier-founder (make-hash-table))
 (defvar println-gen-stamp-renderer (make-hash-table))
 
-(defun println-gen-register-major-mode (major-mode basic literal-string value foreach aligned single identifier stamp)
+(defun println-gen-register-major-mode (mode basic literal-string value foreach aligned single identifier stamp)
   "Register callbacks"
-  (puthash major-mode basic println-gen-basic-renderer)
-  (puthash major-mode literal-string println-gen-basic-literal-string-renderer)
-  (puthash major-mode value println-gen-basic-value-renderer)
-  (puthash major-mode foreach println-gen-foreach-renderer)
-  (puthash major-mode aligned println-gen-aligned-renderer)
-  (puthash major-mode single println-gen-single-line-renderer)
-  (puthash major-mode identifier println-gen-identifier-founder)
-  (puthash major-mode stamp println-gen-stamp-renderer))
+  (puthash mode basic println-gen-basic-renderer)
+  (puthash mode literal-string println-gen-basic-literal-string-renderer)
+  (puthash mode value println-gen-basic-value-renderer)
+  (puthash mode foreach println-gen-foreach-renderer)
+  (puthash mode aligned println-gen-aligned-renderer)
+  (puthash mode single println-gen-single-line-renderer)
+  (puthash mode identifier println-gen-identifier-founder)
+  (puthash mode stamp println-gen-stamp-renderer))
 
 (cl-defstruct (println-gen-preferences
                (:constructor println-gen-preferences-create)
@@ -151,14 +151,14 @@ item data, for example when rendering println cluster as single line."
 
 (defmacro println-gen-modify-and-refresh-cluster-point-at-end (cdata body &rest rest)
   (declare (indent 1) (debug t))
-  `(println-gen-with-cluster-data ,cdata ignore-line-data
+  `(println-gen-with-cluster-data ,cdata _ignore-line-data
      (progn ,body
             ,@rest
             (println-gen-refresh ,cdata))))
 
 (defun println-gen-align ()
   (interactive)
-  (println-gen-modify-and-refresh-cluster cdata line-data
+  (println-gen-modify-and-refresh-cluster cdata _line-data
     (println-gen-toggle-align cdata)))
 
 (defun println-gen-multiline ()
@@ -169,7 +169,7 @@ item data, for example when rendering println cluster as single line."
 
 (defun println-gen-show-identifier ()
   (interactive)
-  (println-gen-modify-and-refresh-cluster cdata line-data
+  (println-gen-modify-and-refresh-cluster cdata _line-data
     (let* ((flags (println-gen-cluster->flags cdata))
            (global (println-gen-preferences->flags println-gen-global-preferences))
            (show-identifier (not (println-gen-flags->show-identifier flags))))
@@ -251,7 +251,7 @@ item data, for example when rendering println cluster as single line."
 
 (defun println-gen-reverse ()
   (interactive)
-  (println-gen-modify-and-refresh-cluster cdata line-data
+  (println-gen-modify-and-refresh-cluster cdata _line-data
     (let* ((items (println-gen-cluster->items cdata))
            (items-with-index (seq-map-indexed (lambda (elt idx) (list idx elt)) items))
            (indexed-stamps-only (seq-filter  (lambda (s) (println-gen-stamp-p (cadr s))) items-with-index))

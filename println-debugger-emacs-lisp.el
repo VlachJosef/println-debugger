@@ -24,7 +24,7 @@
   (format "(message \"%s\")" item))
 
 (defun println-debugger-emacs-lisp-value (item)
-  (format "(message \"%%s\" %s)" (println-gen-safe-string item) item))
+  (format "(message \"%%s\" %s)" (println-gen-safe-string item)))
 
 (defun println-debugger-emacs-lisp-to-string-aligned (item longest identifier)
   (format "(message \"%s%s: %%s\" %s)" (println-gen-identifier identifier) (format (concat "%-" (number-to-string longest) "s") (println-gen-safe-string item)) item))

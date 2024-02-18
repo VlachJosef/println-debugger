@@ -29,6 +29,16 @@
 (defvar println-identifier-founder (make-hash-table))
 (defvar println-stamp-renderer (make-hash-table))
 
+(defun println-register-major-mode (major-mode basic literal-string value foreach aligned single identifier stamp)
+  (puthash major-mode basic println-basic-renderer)
+  (puthash major-mode literal-string println-basic-literal-string-renderer)
+  (puthash major-mode value println-basic-value-renderer)
+  (puthash major-mode foreach println-foreach-renderer)
+  (puthash major-mode aligned println-aligned-renderer)
+  (puthash major-mode single println-single-line-renderer)
+  (puthash major-mode identifier println-identifier-founder)
+  (puthash major-mode stamp println-stamp-renderer))
+
 (cl-defstruct (println-preferences
                (:constructor println-preferences-create)
                (:copier nil)
@@ -282,25 +292,6 @@ item data, for example when rendering println cluster as single line."
                 (:foreach-delimited :foreach)
                 (_ :foreach)))))))
 
-(defvar println-keymap
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-c") 'println-commit)
-    (define-key map (kbd "RET") 'println-newline)
-    (define-key map (kbd "C-M-r") 'println-reverse)
-    (define-key map (kbd "C-M-i") 'println-reset)
-    (define-key map (kbd "C-M-o") 'println-stamp)
-    (define-key map (kbd "C-M-s") 'println-show-identifier)
-    (define-key map (kbd "C-M-m") 'println-multiline)
-    (define-key map (kbd "C-M-a") 'println-align)
-    (define-key map (kbd "C-M-p") 'println-decrease)
-    (define-key map (kbd "C-M-n") 'println-increase)
-    (define-key map (kbd "C-M-k") 'println-ignore)
-    (define-key map (kbd "C-M-d") 'println-delete-at-point)
-    (define-key map (kbd "C-M-x") 'println-literal/identifier)
-    (define-key map (kbd "C-M-c") 'println-foreach)
-    map)
-  "Keymap for println cluster text overlay.")
-
 (defun println-newline ()
   "When at the end of managed println cluster, pressing RET opens
 new line and println cluster's text overlay does not move."
@@ -463,8 +454,8 @@ Useful when kill-ring contains garbage data which should not be printed."
   (when-let ((identifier-founder (gethash major-mode println-identifier-founder)))
     (funcall identifier-founder)))
 
-;; Get indentations of a new line below current line
 (defun println-indentation ()
+  "Get indentations of a new line below current line"
   (save-excursion
     (goto-char (line-end-position))
     (newline 1)
@@ -511,14 +502,6 @@ Useful when kill-ring contains garbage data which should not be printed."
     (println-force-multiline cdata)
     (println-write cdata)))
 
-;;;###autoload
-(defun println-insert (prefix)
-  (interactive "p")
-  (pcase (println-preferences->mode println-global-preferences)
-    (:killed-text (println-standard prefix))
-    (:stamp (println-add-stamp))
-    (_ (error "Unknown mode %s" (println-preferences->mode println-global-preferences)))))
-
 (defun println-refresh (cdata)
   (println-delete-current)
   (if (println-cluster->items cdata)
@@ -544,14 +527,31 @@ Useful when kill-ring contains garbage data which should not be printed."
       (overlay-put overlay 'println-cluster cdata)
       (backward-char))))
 
-(defun println-register-major-mode (major-mode basic literal-string value foreach aligned single identifier stamp)
-  (puthash major-mode basic println-basic-renderer)
-  (puthash major-mode literal-string println-basic-literal-string-renderer)
-  (puthash major-mode value println-basic-value-renderer)
-  (puthash major-mode foreach println-foreach-renderer)
-  (puthash major-mode aligned println-aligned-renderer)
-  (puthash major-mode single println-single-line-renderer)
-  (puthash major-mode identifier println-identifier-founder)
-  (puthash major-mode stamp println-stamp-renderer))
+(defvar println-keymap
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-c") 'println-commit)
+    (define-key map (kbd "RET") 'println-newline)
+    (define-key map (kbd "C-M-r") 'println-reverse)
+    (define-key map (kbd "C-M-i") 'println-reset)
+    (define-key map (kbd "C-M-o") 'println-stamp)
+    (define-key map (kbd "C-M-s") 'println-show-identifier)
+    (define-key map (kbd "C-M-m") 'println-multiline)
+    (define-key map (kbd "C-M-a") 'println-align)
+    (define-key map (kbd "C-M-p") 'println-decrease)
+    (define-key map (kbd "C-M-n") 'println-increase)
+    (define-key map (kbd "C-M-k") 'println-ignore)
+    (define-key map (kbd "C-M-d") 'println-delete-at-point)
+    (define-key map (kbd "C-M-x") 'println-literal/identifier)
+    (define-key map (kbd "C-M-c") 'println-foreach)
+    map)
+  "Keymap for println cluster text overlay.")
+
+;;;###autoload
+(defun println-insert (prefix)
+  (interactive "p")
+  (pcase (println-preferences->mode println-global-preferences)
+    (:killed-text (println-standard prefix))
+    (:stamp (println-add-stamp))
+    (_ (error "Unknown mode %s" (println-preferences->mode println-global-preferences)))))
 
 (provide 'println-debugger-common)

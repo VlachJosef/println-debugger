@@ -5,7 +5,7 @@ Code:
     (println-preferences-default)
     (rust-ts-mode)
     (kill-new "hello")
-    (funcall-interactively 'println-insert 1))
+    (funcall-interactively 'println-debugger 1))
 =-=
 fn main() {|
 }

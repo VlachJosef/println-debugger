@@ -1,9 +1,10 @@
-;;; println-debugger-javascript.el --- console.log statements generation for Javascript -*- lexical-binding: t; -*-
+;;; println-debugger-javascript.el --- Console.log statements generation for Javascript -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2021 Josef Vlach
 
 ;; Homepage: https://github.com/VlachJosef/println-debugger
 ;; Package-Version:  0.1
+;; Package-Requires: ((emacs "29.1"))
 
 ;;; Commentary:
 ;;
@@ -11,71 +12,52 @@
 ;;
 ;;; Code:
 
-(require 'println-debugger-common)
+(require 'println-gen)
 
-(defun println-search-javascript-func ()
-   (js--treesit-defun-name (treesit-defun-at-point)))
-
-(defun println-javascript-to-string (item identifier)
-  (concat "console.log(\"" (println-identifier identifier) (println-safe-string item) ": \", "
+(defun println-debugger-javascript-to-string (item identifier)
+  (concat "console.log(\"" (println-gen-identifier identifier) (println-gen-safe-string item) ": \", "
           item ");"))
 
-(defun println-javascript-literal-string (item)
+(defun println-debugger-javascript-literal-string (item)
   (format "console.log(\"%s\");" item))
 
-(defun println-javascript-value (item)
+(defun println-debugger-javascript-value (item)
   (format "console.log(%s);" item))
 
-(defun println-javascript-to-string-aligned (item longest identifier)
-  (concat "console.log(\"" (println-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-safe-string item)) "\", " item ");"))
+(defun println-debugger-javascript-to-string-aligned (item longest identifier)
+  (concat "console.log(\"" (println-gen-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-gen-safe-string item)) "\", " item ");"))
 
-(defun println-javascript-to-single-line-string (item)
-  (concat "\", " (println-safe-string item) ": \", " item))
+(defun println-debugger-javascript-to-single-line-string (item)
+  (concat "\", " (println-gen-safe-string item) ": \", " item))
 
-(defun println-javascript-render-single-line (items identifier)
-  (concat "console.log(\"" (println-identifier identifier) (s-chop-prefix "\", " (mapconcat #'println-javascript-to-single-line-string items ", ")) ");"))
+(defun println-debugger-javascript-render-single-line (items identifier)
+  (concat "console.log(\"" (println-gen-identifier identifier) (s-chop-prefix "\", " (mapconcat #'println-debugger-javascript-to-single-line-string items ", ")) ");"))
 
-(defun println-javascript-identifier ()
-  (format "%s/%s" (buffer-name) (println-search-javascript-func)))
+(defun println-debugger-javascript-identifier ()
+  (format "%s/%s" (buffer-name) (js--treesit-defun-name (treesit-defun-at-point))))
 
-(defun println-javascript-stamp (order)
+(defun println-debugger-javascript-stamp (order)
   (format "console.log(\"HeRe %s%s%s\");" order order order))
 
-(defun println-javascript-foreach (item type)
+(defun println-debugger-javascript-foreach (item type)
   (pcase type
     (:foreach
      (format "%s.forEach((item) => console.log(item));" item))
     (:foreach-delimited
      (format "console.log(\"%s START\");\n%s.forEach((item) => console.log(item));\nconsole.log(\"%s END\");" item item item))))
 
-(println-register-major-mode 'js-mode
-                             #'println-javascript-to-string
-                             #'println-javascript-literal-string
-                             #'println-javascript-value
-                             #'println-javascript-foreach
-                             #'println-javascript-to-string-aligned
-                             #'println-javascript-render-single-line
-                             #'println-javascript-identifier
-                             #'println-javascript-stamp)
-
-(println-register-major-mode 'typescript-ts-mode
-                             #'println-javascript-to-string
-                             #'println-javascript-literal-string
-                             #'println-javascript-value
-                             #'println-javascript-foreach
-                             #'println-javascript-to-string-aligned
-                             #'println-javascript-render-single-line
-                             #'println-javascript-identifier
-                             #'println-javascript-stamp)
-
-(println-register-major-mode 'tsx-ts-mode
-                             #'println-javascript-to-string
-                             #'println-javascript-literal-string
-                             #'println-javascript-value
-                             #'println-javascript-foreach
-                             #'println-javascript-to-string-aligned
-                             #'println-javascript-render-single-line
-                             #'println-javascript-identifier
-                             #'println-javascript-stamp)
+(dolist (mode '(js-mode typescript-ts-mode tsx-ts-mode))
+  (println-gen-register-major-mode
+   mode
+   #'println-debugger-javascript-to-string
+   #'println-debugger-javascript-literal-string
+   #'println-debugger-javascript-value
+   #'println-debugger-javascript-foreach
+   #'println-debugger-javascript-to-string-aligned
+   #'println-debugger-javascript-render-single-line
+   #'println-debugger-javascript-identifier
+   #'println-debugger-javascript-stamp))
 
 (provide 'println-debugger-javascript)
+
+;;; println-debugger-javascript.el ends here

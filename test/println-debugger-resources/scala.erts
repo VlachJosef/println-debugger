@@ -5,7 +5,7 @@ Code:
     (println-preferences-default)
     (scala-ts-mode)
     (kill-new "hello")
-    (funcall-interactively 'println-insert 1))
+    (funcall-interactively 'println-debugger 1))
 =-=
 object Handler {|
 }
@@ -43,7 +43,7 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert 3))
+    (funcall-interactively 'println-debugger 3))
 =-=
 object Handler {|
 }
@@ -63,8 +63,8 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert 3)
-    (funcall-interactively 'println-reverse))
+    (funcall-interactively 'println-debugger 3)
+    (funcall-interactively 'println-gen-reverse))
 =-=
 object Handler {|
 }
@@ -82,8 +82,8 @@ Code:
     (println-preferences-default)
     (scala-ts-mode)
     (kill-new "lorem")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-stamp))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-stamp))
 =-=
 object Handler {|
 }
@@ -99,9 +99,9 @@ Code:
     (println-preferences-default)
     (scala-ts-mode)
     (kill-new "lorem")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-stamp)
-    (funcall-interactively 'println-increase))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-stamp)
+    (funcall-interactively 'println-gen-increase))
 =-=
 object Handler {|
 }
@@ -121,11 +121,11 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-stamp)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-increase))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-stamp)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase))
 =-=
 object Handler {|
 }
@@ -146,12 +146,12 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-stamp)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-reverse))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-stamp)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-reverse))
 =-=
 object Handler {|
 }
@@ -172,12 +172,12 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-stamp)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-align))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-stamp)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-align))
 =-=
 object Handler {|
 }
@@ -198,8 +198,8 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert 3)
-    (funcall-interactively 'println-multiline))
+    (funcall-interactively 'println-debugger 3)
+    (funcall-interactively 'println-gen-multiline))
 =-=
 object Handler {|
 }
@@ -217,9 +217,9 @@ Code:
     (kill-new "lorem")
     (kill-new "pipa")
     (kill-new "foo")
-    (funcall-interactively 'println-insert 3)
-    (funcall-interactively 'println-multiline)
-    (funcall-interactively 'println-reverse))
+    (funcall-interactively 'println-debugger 3)
+    (funcall-interactively 'println-gen-multiline)
+    (funcall-interactively 'println-gen-reverse))
 =-=
 object Handler {|
 }
@@ -235,8 +235,8 @@ Code:
     (println-preferences-default)
     (scala-ts-mode)
     (kill-new "lorem")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-foreach))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-foreach))
 =-=
 object Handler {|
 }
@@ -252,9 +252,9 @@ Code:
     (println-preferences-default)
     (scala-ts-mode)
     (kill-new "lorem")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-foreach)
-    (funcall-interactively 'println-foreach))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-foreach)
+    (funcall-interactively 'println-gen-foreach))
 =-=
 object Handler {|
 }
@@ -272,10 +272,10 @@ Code:
     (println-preferences-default)
     (scala-ts-mode)
     (kill-new "lorem")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-foreach)
-    (funcall-interactively 'println-foreach)
-    (funcall-interactively 'println-foreach))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-foreach)
+    (funcall-interactively 'println-gen-foreach)
+    (funcall-interactively 'println-gen-foreach))
 =-=
 object Handler {|
 }
@@ -291,8 +291,8 @@ Code:
     (println-preferences-default)
     (scala-ts-mode)
     (kill-new "lorem")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-literal/identifier))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-literal-or-identifier))
 =-=
 object Handler {|
 }
@@ -308,9 +308,9 @@ Code:
     (println-preferences-default)
     (scala-ts-mode)
     (kill-new "lorem")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-literal/identifier)
-    (funcall-interactively 'println-literal/identifier))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-literal-or-identifier)
+    (funcall-interactively 'println-gen-literal-or-identifier))
 =-=
 object Handler {|
 }
@@ -327,16 +327,16 @@ Code:
     (scala-ts-mode)
     (kill-new "foo")
     (kill-new "lorem")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-align)
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-align)
     (line-move-1 1)
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-align)
-    (funcall-interactively 'println-commit)
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-align)
+    (funcall-interactively 'println-gen-commit)
     (line-move-1 -3)
-    (funcall-interactively 'println-commit))
+    (funcall-interactively 'println-gen-commit))
 =-=
 object Handler {|
 
@@ -358,18 +358,18 @@ Code:
     (scala-ts-mode)
     (kill-new "foo")
     (kill-new "lorem")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-align)
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-align)
     (line-move-1 1)
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-align)
-    (funcall-interactively 'println-commit)
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-align)
+    (funcall-interactively 'println-gen-commit)
     (line-move-1 -4)
-    (funcall-interactively 'println-commit))
+    (funcall-interactively 'println-gen-commit))
 =-=
 object Handler {|
 
@@ -395,10 +395,10 @@ Code:
     (kill-new "foo")
     (kill-new "ignore-me")
     (kill-new "lorem")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-ignore)
-    (funcall-interactively 'println-increase))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-ignore)
+    (funcall-interactively 'println-gen-increase))
 =-=
 object Handler {|
 }
@@ -418,12 +418,12 @@ Code:
     (kill-new "lorem-ipsum")
     (kill-new "ignore")
     (kill-new "foo")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-increase)
-    (funcall-interactively 'println-increase)
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
     (line-move-1 -2)
-    (funcall-interactively 'println-ignore))
+    (funcall-interactively 'println-gen-ignore))
 =-=
 object Handler {|
 }
@@ -443,9 +443,9 @@ Code:
     (kill-new "foo")
     (kill-new "lorem")
     (kill-new "ignore-me")
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-ignore)
-    (funcall-interactively 'println-ignore))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-ignore)
+    (funcall-interactively 'println-gen-ignore))
 =-=
 object Handler {|
 }
@@ -463,9 +463,9 @@ Code:
     (let ((kill-ring nil))
       (kill-new "foo")
       (kill-new "lorem")
-      (funcall-interactively 'println-insert 1)
-      (funcall-interactively 'println-ignore)
-      (funcall-interactively 'println-ignore)))
+      (funcall-interactively 'println-debugger 1)
+      (funcall-interactively 'println-gen-ignore)
+      (funcall-interactively 'println-gen-ignore)))
 =-=
 object Handler {|
 }
@@ -483,12 +483,12 @@ Code:
     (let ((kill-ring nil))
       (kill-new "foo")
       (kill-new "lorem")
-      (funcall-interactively 'println-insert 1)
-      (funcall-interactively 'println-stamp)
-      (funcall-interactively 'println-increase)
-      (funcall-interactively 'println-increase)
-      (funcall-interactively 'println-ignore)
-      (funcall-interactively 'println-ignore)))
+      (funcall-interactively 'println-debugger 1)
+      (funcall-interactively 'println-gen-stamp)
+      (funcall-interactively 'println-gen-increase)
+      (funcall-interactively 'println-gen-increase)
+      (funcall-interactively 'println-gen-ignore)
+      (funcall-interactively 'println-gen-ignore)))
 =-=
 object Handler {|
 }
@@ -505,8 +505,8 @@ Code:
     (println-preferences-stamp-cluster)
     (scala-ts-mode)
     (let ((kill-ring nil))
-      (funcall-interactively 'println-insert 1)
-      (funcall-interactively 'println-stamp)))
+      (funcall-interactively 'println-debugger 1)
+      (funcall-interactively 'println-gen-stamp)))
 =-=
 object Handler {|
 }
@@ -523,10 +523,10 @@ Code:
     (scala-ts-mode)
     (let ((kill-ring nil))
       (kill-new "foo")
-      (funcall-interactively 'println-insert 1)
-      (funcall-interactively 'println-increase)
-      (funcall-interactively 'println-multiline)
-      (funcall-interactively 'println-decrease)))
+      (funcall-interactively 'println-debugger 1)
+      (funcall-interactively 'println-gen-increase)
+      (funcall-interactively 'println-gen-multiline)
+      (funcall-interactively 'println-gen-decrease)))
 =-=
 object Handler {|
 }
@@ -543,11 +543,11 @@ Code:
     (scala-ts-mode)
     (let ((kill-ring nil))
       (kill-new "foo")
-      (funcall-interactively 'println-insert 1)
-      (funcall-interactively 'println-increase)
-      (funcall-interactively 'println-multiline)
-      (funcall-interactively 'println-decrease)
-      (funcall-interactively 'println-increase)))
+      (funcall-interactively 'println-debugger 1)
+      (funcall-interactively 'println-gen-increase)
+      (funcall-interactively 'println-gen-multiline)
+      (funcall-interactively 'println-gen-decrease)
+      (funcall-interactively 'println-gen-increase)))
 =-=
 object Handler {|
 }
@@ -563,7 +563,7 @@ Code:
   (lambda ()
     (println-preferences-stamp-single-line-cluster)
     (scala-ts-mode)
-    (funcall-interactively 'println-insert 1))
+    (funcall-interactively 'println-debugger 1))
 =-=
 object Handler {|
 }
@@ -578,8 +578,8 @@ Code:
   (lambda ()
     (println-preferences-stamp-cluster)
     (scala-ts-mode)
-    (funcall-interactively 'println-insert 1)
-    (funcall-interactively 'println-multiline))
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-multiline))
 =-=
 object Handler {|
 }

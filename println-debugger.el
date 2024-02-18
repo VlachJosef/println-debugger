@@ -4,6 +4,8 @@
 
 ;; Homepage: https://github.com/VlachJosef/println-debugger
 ;; Package-Version:  0.1
+;; Package-Requires: ((emacs "25.1"))
+;; Keywords: convenience, tools
 
 ;;; Commentary:
 ;;
@@ -11,7 +13,7 @@
 ;;
 ;;; Code:
 
-(require 'println-debugger-common)
+(require 'println-gen)
 
 (if (featurep 'elisp-mode)
     (require 'println-debugger-emacs-lisp)
@@ -43,4 +45,13 @@
   (with-eval-after-load 'rust-ts-mode
     (require 'println-debugger-rust)))
 
+;;;###autoload
+(defun println-debugger (prefix)
+  (interactive "p")
+  (pcase (println-gen-preferences->mode println-gen-global-preferences)
+    (:killed-text (println-gen-standard prefix))
+    (:stamp (println-gen-add-stamp))))
+
 (provide 'println-debugger)
+
+;;; println-debugger.el ends here

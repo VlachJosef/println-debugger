@@ -6,14 +6,14 @@ Quick generating of println expressions in Emacs Lisp, Scala, Javascript, Typesc
 (use-package println-debugger
   :bind (:map
          emacs-lisp-mode-map
-         ([remap sp-next-sexp] . println-insert)
-         ("C-M-n" . println-insert)
+         ([remap sp-next-sexp] . println-debugger)
+         ("C-M-n" . println-debugger)
          :map scala-mode-map
-         ([remap sp-next-sexp] . println-insert)
-         ("C-M-n" . println-insert)
+         ([remap sp-next-sexp] . println-debugger)
+         ("C-M-n" . println-debugger)
          :map js-mode-map
-         ([remap sp-next-sexp] . println-insert)
-         ("C-M-n" . println-insert)))
+         ([remap sp-next-sexp] . println-debugger)
+         ("C-M-n" . println-debugger)))
  ```
 
 println-debugger in action (outdated)

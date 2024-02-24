@@ -31,7 +31,84 @@
 (defvar println-gen-stamp-renderer (make-hash-table))
 
 (defun println-gen-register-major-mode (mode basic literal-string value foreach aligned single identifier stamp)
-  "Register callbacks"
+  "Register text renderers for major-mode MODE.
+
+STAMP - renderer to print a unique marker only.  When used marker
+number automatically increase by 1.  Reset marker number back to
+1 by `println-gen-reset'.
+
+  Scala example
+    println(\"HeRe 111\")
+
+  Javascript example
+    console.log(\"HeRe 111\");
+
+BASIC - rendered for basic printing of killed-text as variable
+name and its value.
+
+  Scala example
+    println(\"foo: \" + foo)
+    println(\"lorem: \" + lorem)
+
+  Javascript example
+    console.log(\"foo: \", foo);
+    console.log(\"lorem: \", lorem);
+
+ALIGNED - same as BASIC but values are aligned when variable
+names differ in length.
+
+  Scala example
+    println(\"foo  : \" + foo)
+    println(\"lorem: \" + lorem)
+
+  Javascript example
+    console.log(\"foo  : \", foo);
+    console.log(\"lorem: \", lorem);
+
+LITERAL-STRING - rendered for printing killed-text content as a
+string literal.
+
+  Scala example
+    println(\"foo\")
+    println(\"lorem\")
+
+  Javascript example
+    console.log(\"foo\");
+    console.log(\"lorem\");
+
+VALUE - renderer for printing only killed-text content as a value.
+
+  Scala example
+    println(foo)
+    println(lorem)
+
+  Javascript example
+    console.log(foo);
+    console.log(lorem);
+
+FOREACH - renderer for printing content of a list, array etc. one
+item per line.
+
+  Scala example
+    foo.foreach(println)
+    lorem.foreach(println)
+
+  Javascript example
+    foo.forEach((item) => console.log(item));
+    lorem.forEach((item) => console.log(item));
+
+SINGLE - renderer which prints variable names and values on
+single line
+
+  Scala example
+    println(\"foo: \" + foo + \", lorem: \" + lorem)
+
+  Javascript example
+    console.log(\"foo: \", foo, \" lorem: \", lorem);
+
+IDENTIFIER - helper function for BASIC and ALIGNED renderers when
+user want to include enclosing method/object etc. identifier in
+print expression."
   (puthash mode basic println-gen-basic-renderer)
   (puthash mode literal-string println-gen-basic-literal-string-renderer)
   (puthash mode value println-gen-basic-value-renderer)
@@ -116,8 +193,9 @@
           (println-gen-flags->align global) align)))
 
 (defun println-gen-get-line-data ()
-  "Returns item data for current line. Returns nil when line has no
-item data, for example when rendering println cluster as single line."
+  "Return a line-data for current line.
+Return nil when line has no line-data, for example when rendering
+println cluster as a single line."
   (if-let ((println-gen-line-data (get-text-property (if (eolp) (1- (point)) (point)) 'println-gen-line-data)))
       println-gen-line-data
     (if-let ((line (thing-at-point 'line))
@@ -125,9 +203,12 @@ item data, for example when rendering println cluster as single line."
         (get-text-property prop-position 'println-gen-line-data line))))
 
 (defun println-gen-get-cluster-data ()
+  "Return cluster data for current point."
   (get-char-property (point) 'println-gen-cluster))
 
 (defmacro println-gen-with-cluster-data (cdata line-data body)
+  "Bind cluster data to CDATA, line-data to LINE-DATA and execute BODY.
+Both CDATA and LINE-DATA are accesible in BODY."
   (declare (indent 2) (debug t))
   `(let* ((,cdata (println-gen-get-cluster-data))
           (,line-data (println-gen-get-line-data)))
@@ -136,6 +217,9 @@ item data, for example when rendering println cluster as single line."
        (user-error "No cluster data found at the point."))))
 
 (defmacro println-gen-modify-and-refresh-cluster (cdata line-data body)
+  "Execute BODY where CDATA binds cluster data and LINE-DATA binds line data.
+After BODY is evaluated, render new println cluster from CDATA. Old cluster
+is replace."
   (declare (indent 2) (debug t))
   `(println-gen-with-cluster-data ,cdata ,line-data
      (progn ,body
@@ -210,7 +294,7 @@ item data, for example when rendering println cluster as single line."
     (println-gen-add-next-kill cdata)))
 
 (defun println-gen-force-multiline (cdata)
-  "Set multiline flag of `cdata' to t"
+  "Set multiline flag of CDATA to t."
   (setf (println-gen-flags->multiline (println-gen-cluster->flags cdata)) t))
 
 (defun println-gen-decrease ()
@@ -221,7 +305,16 @@ item data, for example when rendering println cluster as single line."
     (when (println-gen-no-kill-text cdata)
       (println-gen-force-multiline cdata))))
 
+(defun println-gen-new-stamp ()
+  "Return new stamp data and increase counter by 1."
+  (println-gen-stamp-create :order
+                            (setf (println-gen-preferences->counter println-gen-global-preferences)
+                                  (1+ (println-gen-preferences->counter println-gen-global-preferences)))))
+
 (defun println-gen-stamp ()
+  "Toggle current line between stamp data and killed-text data.
+When line at point contains killed-text replace it with stamp. When line at point contains stamp
+replace it with killed-text. When there is no kill-ring item to print display informative message."
   (interactive)
   (println-gen-modify-and-refresh-cluster cdata line-data
     (if (println-gen-singleline-p cdata)
@@ -230,9 +323,7 @@ item data, for example when rendering println cluster as single line."
              (index (seq-position items line-data))
              (item-new (cond ((println-gen-killed-text-p line-data)
                               (setf (println-gen-preferences->mode println-gen-global-preferences) :stamp)
-                              (println-gen-stamp-create :order
-                                                        (setf (println-gen-preferences->counter println-gen-global-preferences)
-                                                              (1+ (println-gen-preferences->counter println-gen-global-preferences)))))
+                              (println-gen-new-stamp))
                              ((println-gen-stamp-p line-data)
                               (let ((next-kill (println-gen-next-kill cdata)))
                                 (if (not next-kill)
@@ -245,6 +336,8 @@ item data, for example when rendering println cluster as single line."
           (setf (nth index items) item-new))))))
 
 (defun println-gen-reset ()
+  "Reset global count to 0.
+Next stamp rendered will be generated from number 1."
   (interactive)
   (setf (println-gen-preferences->counter println-gen-global-preferences) 0)
   (message "println counter reset to 1"))
@@ -269,7 +362,7 @@ item data, for example when rendering println cluster as single line."
     (if (println-gen-singleline-p cdata)
         (println-gen-toggle-multiline cdata)
       (if (println-gen-stamp-p line-data)
-          (message "Can't apply literal/identifier on stamp sata")
+          (message "Can't apply literal-or-identifier on stamp data")
         (when (println-gen-align-p cdata)
           (println-gen-toggle-align cdata))
         (setf (println-gen-killed-text->type line-data)
@@ -361,14 +454,17 @@ Useful when kill-ring contains garbage data which should not be printed."
                    (line-move-1 -1)))))))))
 
 (defun println-gen-delete-at-point ()
+  "Delete println cluster."
   (interactive)
   (println-gen-delete-current))
 
 (defun println-gen-find-overlay-specifying (prop)
+  "Get overlay with property name PROP on current point."
   (let ((overlays (overlays-at (point))))
     (seq-find (lambda (overlay) (overlay-get overlay prop)) overlays)))
 
 (defun println-gen-delete-current ()
+  "Delete println cluster."
   (when-let ((overlay (println-gen-find-overlay-specifying 'println-gen-cluster)))
     (delete-region (overlay-start overlay) (overlay-end overlay))))
 
@@ -381,6 +477,8 @@ Useful when kill-ring contains garbage data which should not be printed."
     ""))
 
 (defun println-gen-renderer (type)
+  "Return renderer for TYPE.
+Indicate error when rendered for TYPE is not found in underlying hash-map."
   (let ((renderer
          (gethash major-mode (pcase type
                                (:rich println-gen-basic-renderer)
@@ -424,16 +522,19 @@ Useful when kill-ring contains garbage data which should not be printed."
   (funcall (println-gen-renderer :single) (mapcar #'println-gen-killed-text->killed-text (seq-filter #'println-gen-killed-text-p items)) identifier))
 
 (defun println-gen-multiline-p (cdata)
+  "Return t if items from CDATA are printed on a multiple lines, otherwise nil."
   (println-gen-flags->multiline (println-gen-cluster->flags cdata)))
 
 (defun println-gen-singleline-p (cdata)
-  "Returns t if items from DATA are printed on a single line, otherwise nil"
+  "Return t if items from CDATA are printed on a single line, otherwise nil."
   (not (println-gen-multiline-p cdata)))
 
 (defun println-gen-align-p (cdata)
+  "Return t if align flag from CDATA is set, otherwise nil."
   (println-gen-flags->align (println-gen-cluster->flags cdata)))
 
 (defun println-gen-show-identifier-p (cdata)
+  "Return t if show-identifier flag from CDATA is set, otherwise nil."
   (println-gen-flags->show-identifier (println-gen-cluster->flags cdata)))
 
 (defun println-gen-render (cdata)
@@ -468,6 +569,8 @@ Useful when kill-ring contains garbage data which should not be printed."
       (delete-region (1- (line-beginning-position)) (point)))))
 
 (defun println-gen-standard (prefix)
+  "Render fresh killed-text cluster.
+Render number of PREFIX items from kill-ring."
   (if (not kill-ring)
       (message "Nothing to print, kill-ring is empty")
     (when (println-gen-get-cluster-data)
@@ -485,15 +588,14 @@ Useful when kill-ring contains garbage data which should not be printed."
       (println-gen-write cdata))))
 
 (defun println-gen-add-stamp ()
+  "Render fresh stamp cluster and increase the count by 1."
   (when (println-gen-get-cluster-data)
     (println-gen-delete-current))
   (let* ((identifier (println-gen-search-identifier))
          (global-flags (println-gen-preferences->flags println-gen-global-preferences))
          (flags (copy-println-gen-flags global-flags))
          (indentation (println-gen-indentation))
-         (stamp-item (println-gen-stamp-create :order
-                                               (setf (println-gen-preferences->counter println-gen-global-preferences)
-                                                     (1+ (println-gen-preferences->counter println-gen-global-preferences)))))
+         (stamp-item (println-gen-new-stamp))
          (cdata (println-gen-cluster-create
                  :items (list stamp-item)
                  :identifier identifier
@@ -513,12 +615,10 @@ Useful when kill-ring contains garbage data which should not be printed."
     (indent-according-to-mode)))
 
 (defun println-gen-write (cdata)
-  (let ((str (println-gen-render cdata)))
-    (println-gen-render-content cdata str)))
-
-(defun println-gen-render-content (cdata content)
+  "Stringify CDATA and insert it into buffer with println control overlay."
   (let* ((indentation (println-gen-cluster->indentation cdata))
-         (content (concat indentation content "\n"))
+         (str (println-gen-render cdata))
+         (content (concat indentation str "\n"))
          (start (line-beginning-position)))
     (beginning-of-line nil)
     (insert content)

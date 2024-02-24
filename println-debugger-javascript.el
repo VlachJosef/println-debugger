@@ -31,10 +31,10 @@
   (concat "\", " (println-gen-safe-string item) ": \", " item))
 
 (defun println-debugger-javascript-render-single-line (items identifier)
-  (concat "console.log(\"" (println-gen-identifier identifier) (s-chop-prefix "\", " (mapconcat #'println-debugger-javascript-to-single-line-string items ", ")) ");"))
+  (concat "console.log(\"" (println-gen-identifier identifier) (string-trim-left (mapconcat #'println-debugger-javascript-to-single-line-string items ", ") "\", ") ");"))
 
 (defun println-debugger-javascript-identifier ()
-  (format "%s/%s" (buffer-name) (js--treesit-defun-name (treesit-defun-at-point))))
+  (format "%s" (treesit-defun-name (treesit-defun-at-point))))
 
 (defun println-debugger-javascript-stamp (order)
   (format "console.log(\"HeRe %s%s%s\");" order order order))

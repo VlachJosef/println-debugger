@@ -14,8 +14,8 @@
 
 (require 'println-gen)
 
-(defun println-debugger-rust-search-fn ()
-  (rust-ts-mode--defun-name (treesit-defun-at-point)))
+(defun println-debugger-rust-to-single-line-string (item)
+  (format "%s {:?}" (println-gen-safe-string item)))
 
 (defun println-debugger-rust-to-string (item identifier)
   (concat "println!(\"" (println-gen-identifier identifier) (println-gen-safe-string item) ": {:?}\", "
@@ -33,13 +33,13 @@
 (defun println-debugger-rust-render-single-line (items identifier)
   (concat "println!(\""
           (println-gen-identifier identifier)
-          (s-chop-prefix " " (apply 'concat (make-list (length items) " {:?}")))
+          (string-trim-left (mapconcat #'println-debugger-rust-to-single-line-string items " "))
           "\", "
           (mapconcat #'identity items ", ")
           ");"))
 
 (defun println-debugger-rust-identifier ()
-  (format "%s" (println-debugger-rust-search-fn)))
+  (format "%s" (treesit-defun-name (treesit-defun-at-point))))
 
 (defun println-debugger-rust-stamp (order)
   (format "println!(\"HeRe %s%s%s\");" order order order))

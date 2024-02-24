@@ -32,7 +32,7 @@
 (defun println-debugger-emacs-lisp-render-single-line (items identifier)
   (concat "(message \""
           (println-gen-identifier identifier)
-          (s-chop-prefix ", " (mapconcat #'println-debugger-emacs-lisp-to-single-line-string items ""))
+          (string-trim-left (mapconcat #'println-debugger-emacs-lisp-to-single-line-string items "") ", ")
           "\" "
           (mapconcat #'identity items " ")
           ")"))

@@ -42,7 +42,7 @@ Code:
     (typescript-ts-mode)
     (kill-new "hello")
     (funcall-interactively 'println-debugger 1)
-    (funcall-interactively 'println-gen-show-identifier))
+    (funcall-interactively 'println-debugger-show-identifier))
 =-=
 const handler = (): string => {|
 }
@@ -59,7 +59,7 @@ Code:
     (typescript-ts-mode)
     (kill-new "lorem")
     (funcall-interactively 'println-debugger 1)
-    (funcall-interactively 'println-gen-stamp))
+    (funcall-interactively 'println-debugger-stamp))
 =-=
 const handler = (): string => {|
 }
@@ -78,11 +78,11 @@ Code:
     (kill-new "pipa")
     (kill-new "foo")
     (funcall-interactively 'println-debugger 1)
-    (funcall-interactively 'println-gen-stamp)
-    (funcall-interactively 'println-gen-increase)
-    (funcall-interactively 'println-gen-increase)
-    (funcall-interactively 'println-gen-increase)
-    (funcall-interactively 'println-gen-align))
+    (funcall-interactively 'println-debugger-stamp)
+    (funcall-interactively 'println-debugger-increase)
+    (funcall-interactively 'println-debugger-increase)
+    (funcall-interactively 'println-debugger-increase)
+    (funcall-interactively 'println-debugger-align))
 =-=
 const handler = (): string => {|
 }
@@ -105,7 +105,7 @@ Code:
     (kill-new "pipa")
     (kill-new "foo")
     (funcall-interactively 'println-debugger 3)
-    (funcall-interactively 'println-gen-multiline))
+    (funcall-interactively 'println-debugger-multiline))
 =-=
 const handler = (): string => {|
 }
@@ -122,7 +122,7 @@ Code:
     (typescript-ts-mode)
     (kill-new "lorem")
     (funcall-interactively 'println-debugger 1)
-    (funcall-interactively 'println-gen-foreach))
+    (funcall-interactively 'println-debugger-foreach))
 =-=
 const handler = (): string => {|
 }
@@ -139,8 +139,8 @@ Code:
     (typescript-ts-mode)
     (kill-new "lorem")
     (funcall-interactively 'println-debugger 1)
-    (funcall-interactively 'println-gen-foreach)
-    (funcall-interactively 'println-gen-foreach))
+    (funcall-interactively 'println-debugger-foreach)
+    (funcall-interactively 'println-debugger-foreach))
 =-=
 const handler = (): string => {|
 }
@@ -159,7 +159,7 @@ Code:
     (typescript-ts-mode)
     (kill-new "lo\"rem")
     (funcall-interactively 'println-debugger 1)
-    (funcall-interactively 'println-gen-literal-or-identifier))
+    (funcall-interactively 'println-debugger-literal-or-identifier))
 =-=
 const handler = (): string => {|
 }
@@ -176,8 +176,8 @@ Code:
     (typescript-ts-mode)
     (kill-new "lo\"rem")
     (funcall-interactively 'println-debugger 1)
-    (funcall-interactively 'println-gen-literal-or-identifier)
-    (funcall-interactively 'println-gen-literal-or-identifier))
+    (funcall-interactively 'println-debugger-literal-or-identifier)
+    (funcall-interactively 'println-debugger-literal-or-identifier))
 =-=
 const handler = (): string => {|
 }

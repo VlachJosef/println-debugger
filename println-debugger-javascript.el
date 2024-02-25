@@ -12,26 +12,28 @@
 ;;
 ;;; Code:
 
-(require 'println-gen)
+(require 'js)
+(require 'typescript-ts-mode)
+(require 'println-debugger)
 
 (defun println-debugger-javascript-to-string (item identifier)
-  (concat "console.log(\"" (println-gen-identifier identifier) (println-gen-safe-string item) ": \", "
+  (concat "console.log(\"" (println-debugger-identifier identifier) (println-debugger-safe-string item) ": \", "
           item ");"))
 
 (defun println-debugger-javascript-literal-string (item)
-  (format "console.log(\"%s\");" (println-gen-safe-string item)))
+  (format "console.log(\"%s\");" (println-debugger-safe-string item)))
 
 (defun println-debugger-javascript-value (item)
   (format "console.log(%s);" item))
 
 (defun println-debugger-javascript-to-string-aligned (item longest identifier)
-  (concat "console.log(\"" (println-gen-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-gen-safe-string item)) "\", " item ");"))
+  (concat "console.log(\"" (println-debugger-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-debugger-safe-string item)) "\", " item ");"))
 
 (defun println-debugger-javascript-to-single-line-string (item)
-  (concat "\"" (println-gen-safe-string item) ": \", " item))
+  (concat "\"" (println-debugger-safe-string item) ": \", " item))
 
 (defun println-debugger-javascript-render-single-line (items identifier)
-  (concat "console.log(" (println-gen-identifier identifier) (mapconcat #'println-debugger-javascript-to-single-line-string items ", ") ");"))
+  (concat "console.log(" (println-debugger-identifier identifier) (mapconcat #'println-debugger-javascript-to-single-line-string items ", ") ");"))
 
 (defun println-debugger-javascript-identifier ()
   (format "%s" (treesit-defun-name (treesit-defun-at-point))))
@@ -47,7 +49,7 @@
      (format "console.log(\"%s START\");\n%s.forEach((item) => console.log(item));\nconsole.log(\"%s END\");" item item item))))
 
 (dolist (mode '(js-mode typescript-ts-mode tsx-ts-mode))
-  (println-gen-register-major-mode
+  (println-debugger-register-major-mode
    mode
    #'println-debugger-javascript-to-string
    #'println-debugger-javascript-literal-string

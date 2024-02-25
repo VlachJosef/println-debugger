@@ -12,27 +12,28 @@
 ;;
 ;;; Code:
 
-(require 'println-gen)
+(require 'rust-ts-mode)
+(require 'println-debugger)
 
 (defun println-debugger-rust-to-single-line-string (item)
-  (format "%s: {:?}" (println-gen-safe-string item)))
+  (format "%s: {:?}" (println-debugger-safe-string item)))
 
 (defun println-debugger-rust-to-string (item identifier)
-  (concat "println!(\"" (println-gen-identifier identifier) (println-gen-safe-string item) ": {:?}\", "
+  (concat "println!(\"" (println-debugger-identifier identifier) (println-debugger-safe-string item) ": {:?}\", "
           item ");"))
 
 (defun println-debugger-rust-literal-string (item)
-  (format "println!(\"%s\");" (println-gen-safe-string item)))
+  (format "println!(\"%s\");" (println-debugger-safe-string item)))
 
 (defun println-debugger-rust-value (item)
   (format "println!(\"{:?}\", %s);" item))
 
 (defun println-debugger-rust-to-string-aligned (item longest identifier)
-  (concat "println!(\"" (println-gen-identifier identifier) (format (concat "%-" (number-to-string longest) "s: {:?}") (println-gen-safe-string item)) "\", " item ");"))
+  (concat "println!(\"" (println-debugger-identifier identifier) (format (concat "%-" (number-to-string longest) "s: {:?}") (println-debugger-safe-string item)) "\", " item ");"))
 
 (defun println-debugger-rust-render-single-line (items identifier)
   (concat "println!(\""
-          (println-gen-identifier identifier)
+          (println-debugger-identifier identifier)
           (mapconcat #'println-debugger-rust-to-single-line-string items " ")
           "\", "
           (mapconcat #'identity items ", ")
@@ -51,7 +52,7 @@
     (:foreach-delimited
      (format "println!(\"%s START\");\nfor item in %s.iter() {\n    println!(\"{:?}\", item);\n}\nprintln!(\"%s END\");" item item item))))
 
-(println-gen-register-major-mode
+(println-debugger-register-major-mode
  'rust-ts-mode
  #'println-debugger-rust-to-string
  #'println-debugger-rust-literal-string

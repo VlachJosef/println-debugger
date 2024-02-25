@@ -12,25 +12,26 @@
 ;;
 ;;; Code:
 
-(require 'println-gen)
+(require 'scala-ts-mode)
+(require 'println-debugger)
 
 (defun println-debugger-scala-to-single-line-string (item)
-  (concat (println-gen-safe-string item) ": \" + " item))
+  (concat (println-debugger-safe-string item) ": \" + " item))
 
 (defun println-debugger-scala-to-string (item identifier)
-  (concat "println(\"" (println-gen-identifier identifier) (println-gen-safe-string item) ": \" + " item ")"))
+  (concat "println(\"" (println-debugger-identifier identifier) (println-debugger-safe-string item) ": \" + " item ")"))
 
 (defun println-debugger-scala-literal-string (item)
-  (format "println(\"%s\")" (println-gen-safe-string item)))
+  (format "println(\"%s\")" (println-debugger-safe-string item)))
 
 (defun println-debugger-scala-value (item)
   (format "println(%s)" item))
 
 (defun println-debugger-scala-to-string-aligned (item longest identifier)
-  (concat "println(\"" (println-gen-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-gen-safe-string item)) "\" + " item ")"))
+  (concat "println(\"" (println-debugger-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-debugger-safe-string item)) "\" + " item ")"))
 
 (defun println-debugger-scala-render-single-line (items identifier)
-  (concat "println(\"" (println-gen-identifier identifier) (mapconcat #'println-debugger-scala-to-single-line-string items " + \" ") ")"))
+  (concat "println(\"" (println-debugger-identifier identifier) (mapconcat #'println-debugger-scala-to-single-line-string items " + \" ") ")"))
 
 (defun println-debugger-scala-identifier ()
   (format "%s" (treesit-defun-name (treesit-defun-at-point))))
@@ -45,7 +46,7 @@
     (:foreach-delimited
      (format "println(\"%s START\")\n%s.foreach(println)\nprintln(\"%s END\")" item item item))))
 
-(println-gen-register-major-mode
+(println-debugger-register-major-mode
  'scala-ts-mode
  #'println-debugger-scala-to-string
  #'println-debugger-scala-literal-string

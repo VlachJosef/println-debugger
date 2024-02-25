@@ -17,27 +17,27 @@
 (require 'println-debugger)
 
 (defun println-set-preferences (counter mode flags)
-  (setf (println-gen-preferences->counter println-gen-global-preferences) counter)
-  (setf (println-gen-preferences->mode println-gen-global-preferences) mode)
-  (setf (println-gen-preferences->flags println-gen-global-preferences) flags))
+  (setf (println-debugger-preferences->counter println-debugger-global-preferences) counter)
+  (setf (println-debugger-preferences->mode println-debugger-global-preferences) mode)
+  (setf (println-debugger-preferences->flags println-debugger-global-preferences) flags))
 
 (defun println-preferences-default ()
   (println-set-preferences 0 :killed-text
-                           (println-gen-flags-create
+                           (println-debugger-flags-create
                             :multiline t
                             :align nil
                             :show-identifier nil)))
 
 (defun println-preferences-stamp-cluster ()
   (println-set-preferences 2 :stamp
-                           (println-gen-flags-create
+                           (println-debugger-flags-create
                             :multiline t
                             :align nil
                             :show-identifier nil)))
 
 (defun println-preferences-stamp-single-line-cluster ()
   (println-set-preferences 4 :stamp
-                           (println-gen-flags-create
+                           (println-debugger-flags-create
                             :multiline nil
                             :align nil
                             :show-identifier nil)))

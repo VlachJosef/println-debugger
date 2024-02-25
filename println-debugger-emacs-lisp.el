@@ -12,26 +12,27 @@
 ;;
 ;;; Code:
 
-(require 'println-gen)
+(require 'elisp-mode)
+(require 'println-debugger)
 
 (defun println-debugger-emacs-lisp-to-single-line-string (item)
-  (format "%s: %%s" (println-gen-safe-string item)))
+  (format "%s: %%s" (println-debugger-safe-string item)))
 
 (defun println-debugger-emacs-lisp-to-string (item identifier)
-  (format "(message \"%s%s: %%s\" %s)" (println-gen-identifier identifier) (println-gen-safe-string item) item))
+  (format "(message \"%s%s: %%s\" %s)" (println-debugger-identifier identifier) (println-debugger-safe-string item) item))
 
 (defun println-debugger-emacs-lisp-literal-string (item)
-  (format "(message \"%s\")" (println-gen-safe-string item)))
+  (format "(message \"%s\")" (println-debugger-safe-string item)))
 
 (defun println-debugger-emacs-lisp-value (item)
   (format "(message \"%%s\" %s)" item))
 
 (defun println-debugger-emacs-lisp-to-string-aligned (item longest identifier)
-  (format "(message \"%s%s: %%s\" %s)" (println-gen-identifier identifier) (format (concat "%-" (number-to-string longest) "s") (println-gen-safe-string item)) item))
+  (format "(message \"%s%s: %%s\" %s)" (println-debugger-identifier identifier) (format (concat "%-" (number-to-string longest) "s") (println-debugger-safe-string item)) item))
 
 (defun println-debugger-emacs-lisp-render-single-line (items identifier)
   (concat "(message \""
-          (println-gen-identifier identifier)
+          (println-debugger-identifier identifier)
           (mapconcat #'println-debugger-emacs-lisp-to-single-line-string items " ")
           "\" "
           (mapconcat #'identity items " ")
@@ -52,7 +53,7 @@
     (:foreach-delimited
      (format "(message \"%s START\")\n(dolist (element %s) (message \"\%%s\" element))\n(message \"%s END\")" item item item))))
 
-(println-gen-register-major-mode
+(println-debugger-register-major-mode
  'emacs-lisp-mode
  #'println-debugger-emacs-lisp-to-string
  #'println-debugger-emacs-lisp-literal-string

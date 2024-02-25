@@ -15,14 +15,14 @@
 (require 'println-gen)
 
 (defun println-debugger-rust-to-single-line-string (item)
-  (format "%s {:?}" (println-gen-safe-string item)))
+  (format "%s: {:?}" (println-gen-safe-string item)))
 
 (defun println-debugger-rust-to-string (item identifier)
   (concat "println!(\"" (println-gen-identifier identifier) (println-gen-safe-string item) ": {:?}\", "
           item ");"))
 
 (defun println-debugger-rust-literal-string (item)
-  (format "println!(\"%s\");" item))
+  (format "println!(\"%s\");" (println-gen-safe-string item)))
 
 (defun println-debugger-rust-value (item)
   (format "println!(\"{:?}\", %s);" item))
@@ -33,7 +33,7 @@
 (defun println-debugger-rust-render-single-line (items identifier)
   (concat "println!(\""
           (println-gen-identifier identifier)
-          (string-trim-left (mapconcat #'println-debugger-rust-to-single-line-string items " "))
+          (mapconcat #'println-debugger-rust-to-single-line-string items " ")
           "\", "
           (mapconcat #'identity items ", ")
           ");"))

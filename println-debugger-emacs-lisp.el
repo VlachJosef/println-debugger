@@ -15,16 +15,16 @@
 (require 'println-gen)
 
 (defun println-debugger-emacs-lisp-to-single-line-string (item)
-  (concat (format ", %s:" item) " %s"))
+  (format "%s: %%s" (println-gen-safe-string item)))
 
 (defun println-debugger-emacs-lisp-to-string (item identifier)
   (format "(message \"%s%s: %%s\" %s)" (println-gen-identifier identifier) (println-gen-safe-string item) item))
 
 (defun println-debugger-emacs-lisp-literal-string (item)
-  (format "(message \"%s\")" item))
+  (format "(message \"%s\")" (println-gen-safe-string item)))
 
 (defun println-debugger-emacs-lisp-value (item)
-  (format "(message \"%%s\" %s)" (println-gen-safe-string item)))
+  (format "(message \"%%s\" %s)" item))
 
 (defun println-debugger-emacs-lisp-to-string-aligned (item longest identifier)
   (format "(message \"%s%s: %%s\" %s)" (println-gen-identifier identifier) (format (concat "%-" (number-to-string longest) "s") (println-gen-safe-string item)) item))
@@ -32,7 +32,7 @@
 (defun println-debugger-emacs-lisp-render-single-line (items identifier)
   (concat "(message \""
           (println-gen-identifier identifier)
-          (string-trim-left (mapconcat #'println-debugger-emacs-lisp-to-single-line-string items "") ", ")
+          (mapconcat #'println-debugger-emacs-lisp-to-single-line-string items " ")
           "\" "
           (mapconcat #'identity items " ")
           ")"))
@@ -43,7 +43,7 @@
     (match-string 1)))
 
 (defun println-debugger-emacs-lisp-stamp (order)
-  (format "(message \"HerE %s%s%s\")" order order order))
+  (format "(message \"HeRe %s%s%s\")" order order order))
 
 (defun println-debugger-emacs-lisp-foreach (item type)
   (pcase type

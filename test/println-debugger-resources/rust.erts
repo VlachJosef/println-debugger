@@ -34,3 +34,158 @@ fn main() {
     println!("hello: {:?}", hello);|
 }
 =-=-=
+
+Name: rust - show identifier
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (rust-ts-mode)
+    (kill-new "hello")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-show-identifier))
+=-=
+fn main() {|
+}
+=-=
+fn main() {
+    println!("[main] hello: {:?}", hello);|
+}
+=-=-=
+
+Name: rust - print stamp
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (rust-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-stamp))
+=-=
+fn main() {|
+}
+=-=
+fn main() {
+    println!("HeRe 111");|
+}
+=-=-=
+
+Name: rust - print stamp followed by three items and align
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (rust-ts-mode)
+    (kill-new "lorem")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-stamp)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-align))
+=-=
+fn main() {|
+}
+=-=
+fn main() {
+    println!("HeRe 111");
+    println!("foo  : {:?}", foo);
+    println!("pipa : {:?}", pipa);
+    println!("lorem: {:?}", lorem);
+}
+=-=-=
+
+Name: rust - print stamp followed by three items and multiline
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (rust-ts-mode)
+    (kill-new "\"lorem\"")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-debugger 3)
+    (funcall-interactively 'println-gen-multiline))
+=-=
+fn main() {|
+}
+=-=
+fn main() {
+    println!("foo: {:?} pipa: {:?} lorem: {:?}", foo, pipa, "lorem");|
+}
+=-=-=
+
+Name: rust - print foreach basic
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (rust-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-foreach))
+=-=
+fn main() {|
+}
+=-=
+fn main() {
+    for item in lorem.iter() {|
+        println!("{:?}", item);
+    }
+}
+=-=-=
+
+Name: rust - print foreach basic -> delimited
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (rust-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-foreach)
+    (funcall-interactively 'println-gen-foreach))
+=-=
+fn main() {|
+}
+=-=
+fn main() {
+    println!("lorem START");|
+    for item in lorem.iter() {
+        println!("{:?}", item);
+    }
+    println!("lorem END");
+}
+=-=-=
+
+Name: rust - print identifier only
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (rust-ts-mode)
+    (kill-new "lo\"rem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-literal-or-identifier))
+=-=
+fn main() {|
+}
+=-=
+fn main() {
+    println!("lorem");|
+}
+=-=-=
+
+Name: rust - print literal only
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (rust-ts-mode)
+    (kill-new "lo\"rem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-literal-or-identifier)
+    (funcall-interactively 'println-gen-literal-or-identifier))
+=-=
+fn main() {|
+}
+=-=
+fn main() {
+    println!("{:?}", lo"rem);|
+}
+=-=-=

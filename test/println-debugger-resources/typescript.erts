@@ -34,3 +34,155 @@ const handler = (): string => {
   console.log("hello: ", hello);|
 }
 =-=-=
+
+Name: typescript - show identifier
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (typescript-ts-mode)
+    (kill-new "hello")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-show-identifier))
+=-=
+const handler = (): string => {|
+}
+=-=
+const handler = (): string => {
+  console.log("[handler] hello: ", hello);|
+}
+=-=-=
+
+Name: typescript - print stamp
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (typescript-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-stamp))
+=-=
+const handler = (): string => {|
+}
+=-=
+const handler = (): string => {
+  console.log("HeRe 111");|
+}
+=-=-=
+
+Name: typescript - print stamp followed by three items and align
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (typescript-ts-mode)
+    (kill-new "lorem")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-stamp)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-align))
+=-=
+const handler = (): string => {|
+}
+=-=
+const handler = (): string => {
+  console.log("HeRe 111");
+  console.log("foo  : ", foo);
+  console.log("pipa : ", pipa);
+  console.log("lorem: ", lorem);|
+}
+=-=-=
+
+
+Name: typescript - print stamp followed by three items and multiline
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (typescript-ts-mode)
+    (kill-new "\"lorem\"")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-debugger 3)
+    (funcall-interactively 'println-gen-multiline))
+=-=
+const handler = (): string => {|
+}
+=-=
+const handler = (): string => {
+  console.log("foo: ", foo, "pipa: ", pipa, "lorem: ", "lorem");|
+}
+=-=-=
+
+Name: typescript - print foreach basic
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (typescript-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-foreach))
+=-=
+const handler = (): string => {|
+}
+=-=
+const handler = (): string => {
+  lorem.forEach((item) => console.log(item));
+}
+=-=-=
+
+Name: typescript - print foreach basic -> delimited
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (typescript-ts-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-foreach)
+    (funcall-interactively 'println-gen-foreach))
+=-=
+const handler = (): string => {|
+}
+=-=
+const handler = (): string => {
+  console.log("lorem START");|
+  lorem.forEach((item) => console.log(item));
+  console.log("lorem END");
+}
+=-=-=
+
+Name: typescript - print identifier only
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (typescript-ts-mode)
+    (kill-new "lo\"rem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-literal-or-identifier))
+=-=
+const handler = (): string => {|
+}
+=-=
+const handler = (): string => {
+  console.log("lorem");|
+}
+=-=-=
+
+Name: typescript - print literal only
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (typescript-ts-mode)
+    (kill-new "lo\"rem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-literal-or-identifier)
+    (funcall-interactively 'println-gen-literal-or-identifier))
+=-=
+const handler = (): string => {|
+}
+=-=
+const handler = (): string => {
+  console.log(lo"rem);|
+}
+=-=-=

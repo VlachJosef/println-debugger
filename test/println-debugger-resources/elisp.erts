@@ -34,3 +34,155 @@ Name: elisp - basic println - point at the beginning of a line
   (message "hello: %s" hello)|
 )
 =-=-=
+
+Name: elisp - show identifier
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (emacs-lisp-mode)
+    (kill-new "hello")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-show-identifier))
+=-=
+(defun foo (hello)|
+)
+=-=
+(defun foo (hello)
+  (message "[foo] hello: %s" hello)|
+)
+=-=-=
+
+Name: elisp - print stamp
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (emacs-lisp-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-stamp))
+=-=
+(defun foo (hello)|
+)
+=-=
+(defun foo (hello)
+  (message "HeRe 111")|
+)
+=-=-=
+
+Name: elisp - print stamp followed by three items and align
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (emacs-lisp-mode)
+    (kill-new "lorem")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-stamp)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-increase)
+    (funcall-interactively 'println-gen-align))
+=-=
+(defun foo (hello)|
+)
+=-=
+(defun foo (hello)
+  (message "HeRe 111")
+  (message "foo  : %s" foo)
+  (message "pipa : %s" pipa)
+  (message "lorem: %s" lorem)|
+)
+=-=-=
+
+Name: elisp - print stamp followed by three items and multiline
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (emacs-lisp-mode)
+    (kill-new "\"lorem\"")
+    (kill-new "pipa")
+    (kill-new "foo")
+    (funcall-interactively 'println-debugger 3)
+    (funcall-interactively 'println-gen-multiline))
+=-=
+(defun foo (hello)|
+)
+=-=
+(defun foo (hello)
+  (message "foo: %s pipa: %s lorem: %s" foo pipa "lorem")|
+)
+=-=-=
+
+Name: elisp - print foreach basic
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (emacs-lisp-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-foreach))
+=-=
+(defun foo (hello)|
+)
+=-=
+(defun foo (hello)
+  (dolist (element lorem) (message "%s" element))|
+)
+=-=-=
+
+Name: elisp - print foreach basic -> delimited
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (emacs-lisp-mode)
+    (kill-new "lorem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-foreach)
+    (funcall-interactively 'println-gen-foreach))
+=-=
+(defun foo (hello)|
+)
+=-=
+(defun foo (hello)
+  (message "lorem START")|
+  (dolist (element lorem) (message "%s" element))
+  (message "lorem END")
+)
+=-=-=
+
+
+Name: elisp - print identifier only
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (emacs-lisp-mode)
+    (kill-new "lo\"rem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-literal-or-identifier))
+=-=
+(defun foo (hello)|
+)
+=-=
+(defun foo (hello)
+  (message "lorem")|
+)
+=-=-=
+
+Name: elisp - print literal only
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (emacs-lisp-mode)
+    (kill-new "lo\"rem")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-literal-or-identifier)
+    (funcall-interactively 'println-gen-literal-or-identifier))
+=-=
+(defun foo (hello)|
+)
+=-=
+(defun foo (hello)
+  (message "%s" lo"rem)|
+)
+=-=-=

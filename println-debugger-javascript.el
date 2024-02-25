@@ -19,7 +19,7 @@
           item ");"))
 
 (defun println-debugger-javascript-literal-string (item)
-  (format "console.log(\"%s\");" item))
+  (format "console.log(\"%s\");" (println-gen-safe-string item)))
 
 (defun println-debugger-javascript-value (item)
   (format "console.log(%s);" item))
@@ -28,10 +28,10 @@
   (concat "console.log(\"" (println-gen-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-gen-safe-string item)) "\", " item ");"))
 
 (defun println-debugger-javascript-to-single-line-string (item)
-  (concat "\", " (println-gen-safe-string item) ": \", " item))
+  (concat "\"" (println-gen-safe-string item) ": \", " item))
 
 (defun println-debugger-javascript-render-single-line (items identifier)
-  (concat "console.log(\"" (println-gen-identifier identifier) (string-trim-left (mapconcat #'println-debugger-javascript-to-single-line-string items ", ") "\", ") ");"))
+  (concat "console.log(" (println-gen-identifier identifier) (mapconcat #'println-debugger-javascript-to-single-line-string items ", ") ");"))
 
 (defun println-debugger-javascript-identifier ()
   (format "%s" (treesit-defun-name (treesit-defun-at-point))))

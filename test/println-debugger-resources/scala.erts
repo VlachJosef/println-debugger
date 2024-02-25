@@ -35,6 +35,23 @@ object Handler {
 }
 =-=-=
 
+Name: scala - show identifier
+Code:
+  (lambda ()
+    (println-preferences-default)
+    (scala-ts-mode)
+    (kill-new "hello")
+    (funcall-interactively 'println-debugger 1)
+    (funcall-interactively 'println-gen-show-identifier))
+=-=
+object Handler {|
+}
+=-=
+object Handler {
+  println("[Handler] hello: " + hello)|
+}
+=-=-=
+
 Name: scala - 3 println expressions
 Code:
   (lambda ()
@@ -195,7 +212,7 @@ Code:
   (lambda ()
     (println-preferences-default)
     (scala-ts-mode)
-    (kill-new "lorem")
+    (kill-new "\"lorem\"")
     (kill-new "pipa")
     (kill-new "foo")
     (funcall-interactively 'println-debugger 3)
@@ -205,7 +222,7 @@ object Handler {|
 }
 =-=
 object Handler {
-  println("foo: " + foo + ", pipa: " + pipa + ", lorem: " + lorem)|
+  println("foo: " + foo + " pipa: " + pipa + " lorem: " + "lorem")|
 }
 =-=-=
 
@@ -225,7 +242,7 @@ object Handler {|
 }
 =-=
 object Handler {
-  println("lorem: " + lorem + ", pipa: " + pipa + ", foo: " + foo)|
+  println("lorem: " + lorem + " pipa: " + pipa + " foo: " + foo)|
 }
 =-=-=
 
@@ -290,7 +307,7 @@ Code:
   (lambda ()
     (println-preferences-default)
     (scala-ts-mode)
-    (kill-new "lorem")
+    (kill-new "lo\"rem")
     (funcall-interactively 'println-debugger 1)
     (funcall-interactively 'println-gen-literal-or-identifier))
 =-=
@@ -307,7 +324,7 @@ Code:
   (lambda ()
     (println-preferences-default)
     (scala-ts-mode)
-    (kill-new "lorem")
+    (kill-new "lo\"rem")
     (funcall-interactively 'println-debugger 1)
     (funcall-interactively 'println-gen-literal-or-identifier)
     (funcall-interactively 'println-gen-literal-or-identifier))
@@ -316,7 +333,7 @@ object Handler {|
 }
 =-=
 object Handler {
-  println(lorem)|
+  println(lo"rem)|
 }
 =-=-=
 

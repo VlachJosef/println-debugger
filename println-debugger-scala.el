@@ -15,13 +15,13 @@
 (require 'println-gen)
 
 (defun println-debugger-scala-to-single-line-string (item)
-  (concat "\", " (println-gen-safe-string item) ": \" + " item))
+  (concat (println-gen-safe-string item) ": \" + " item))
 
 (defun println-debugger-scala-to-string (item identifier)
   (concat "println(\"" (println-gen-identifier identifier) (println-gen-safe-string item) ": \" + " item ")"))
 
 (defun println-debugger-scala-literal-string (item)
-  (format "println(\"%s\")" item))
+  (format "println(\"%s\")" (println-gen-safe-string item)))
 
 (defun println-debugger-scala-value (item)
   (format "println(%s)" item))
@@ -30,7 +30,7 @@
   (concat "println(\"" (println-gen-identifier identifier) (format (concat "%-" (number-to-string longest) "s: ") (println-gen-safe-string item)) "\" + " item ")"))
 
 (defun println-debugger-scala-render-single-line (items identifier)
-  (concat "println(\"" (println-gen-identifier identifier) (string-trim-left (mapconcat #'println-debugger-scala-to-single-line-string items " + ") "\", ") ")"))
+  (concat "println(\"" (println-gen-identifier identifier) (mapconcat #'println-debugger-scala-to-single-line-string items " + \" ") ")"))
 
 (defun println-debugger-scala-identifier ()
   (format "%s" (treesit-defun-name (treesit-defun-at-point))))
